@@ -5,7 +5,7 @@ The testing environment supports two ways of deploying, on-premises in a cluster
 
 ## AWS environment
 
-###Usage
+### Usage
 
 * Download [terraform](https://www.terraform.io/downloads.html) executable and add its location to PATH.
 * Provide AWS account credentials (in ~/.aws/credentials file or via environment variables)
@@ -24,7 +24,7 @@ terraform apply
 terraform destroy
 ```
 
-###How it works
+### How it works
 
 1. Terraform connects to AWS using credentials provided in ~/.aws/credentials file or via environment variables and creates all required infrastructure (VPC, subnet, EC2 machines etc.) if it is not there.
 2. Upon creation of EC2 machines, terraform installs Docker on each machine and starts docker engine (see worker_userdata.sh)
@@ -47,7 +47,7 @@ For testing purposes, terraform script creates public S3 buckets and places EC2 
 ## Local environment (on-premise)
 ...
 
-###How it works
+### How it works
 
 1. Terraform connects to on-premise cluster machines, installs Docker on each machine and starts docker engine. All VMs should share the same network.
 2. On the swarm manager node, terraform initializes swarm cluster and then uses generated token to add workers to the cluster, running a corresponding command on each worker.
