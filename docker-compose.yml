@@ -1,0 +1,91 @@
+version: "3"
+
+services:
+
+  spark-master:
+    image: "datamechanics/spark:3.2-latest"
+    ports:
+      - "8080:8080"
+    networks:
+      - spark-network
+    deploy:
+      placement:
+        # set node labels using docker node update --label-add key=value <NODE ID> from swarm manager
+        constraints:
+          - node.labels.role==master
+
+  spark-worker:
+    image: "datamechanics/spark:3.2-latest"
+    ports:
+      - "8081:8081"
+    environment:
+      - CORES=3
+      - MEMORY=4G
+    deploy:
+      placement:
+        # set node labels using docker node update --label-add key=value <NODE ID> from swarm manager
+        constraints:
+          - node.labels.role==worker
+      replicas: 3
+    networks:
+      - spark-network
+
+  driver:
+    image: "maven:3.8.4-openjdk-11"
+    ports:
+      - "8080:8080"
+    deploy:
+      placement:
+        # set node labels using docker node update --label-add key=value <NODE ID> from swarm manager
+        constraints:
+          - node.labels.role==manager
+    networks:
+      - spark-network
+
+  generator:
+    image: "maven:3.8.4-openjdk-11"
+    ports:
+      - "8080:8080"
+    deploy:
+      placement:
+        # set node labels using docker node update --label-add key=value <NODE ID> from swarm manager
+        constraints:
+          - node.labels.role==generator
+    networks:
+      - spark-network
+
+  kafka:
+    image: "wurstmeister/kafka:latest"
+    ports:
+      - "8081:8081"
+    environment:
+      - KAFKA_ZOOKEEPER_CONNECT=""
+    deploy:
+      placement:
+        # set node labels using docker node update --label-add key=value <NODE ID> from swarm manager
+        constraints:
+          - node.labels.role==generator
+    networks:
+      - spark-network
+
+  zookeeper:
+    image: "zookeeper:latest" # This image is configured with volumes at /data and /datalog to hold the Zookeeper in-memory database snapshots and the transaction log of updates to the database
+    ports:
+      - "2181:2181"
+      - "2888:2888"
+      - "3888:3888"
+      - "8080:8080"
+    restart: always # Since the Zookeeper "fails fast" it's better to always restart it
+    environment:
+      - ZOO_LOG4J_PROP="INFO,ROLLINGFILE" # Redirects logging to /logs/zookeeper.log, the image already has a volume in /logs
+    deploy:
+      placement:
+        # set node labels using docker node update --label-add key=value <NODE ID> from swarm manager
+        constraints:
+          - node.labels.role==manager
+    networks:
+      - spark-network
+
+networks:
+  spark-network:
+    driver: overlay
