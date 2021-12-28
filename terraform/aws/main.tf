@@ -1,7 +1,7 @@
 # Configure the AWS provider
 provider "aws" {
   region  = "us-east-1"
-  version = "~> 3.20.0"
+  profile = "personal"
 }
 
 # Create a VPC
@@ -42,7 +42,7 @@ resource "aws_route_table_association" "web_public_rt_association" {
 # Create an EC2 instance
 resource "aws_instance" "instance_1" {
   ami                         = "ami-0be2609ba883822ec"
-  instance_type               = "t2.micro"
+  instance_type               = "t2.medium"
   availability_zone           = "us-east-1a"
   key_name                    = aws_key_pair.key_pair.key_name
   associate_public_ip_address = "true"
@@ -55,7 +55,7 @@ resource "aws_instance" "instance_1" {
 
 resource "aws_instance" "instance_2" {
   ami                         = "ami-0be2609ba883822ec"
-  instance_type               = "t2.micro"
+  instance_type               = "t2.medium"
   availability_zone           = "us-east-1a"
   key_name                    = aws_key_pair.key_pair.key_name
   associate_public_ip_address = "true"
@@ -68,7 +68,7 @@ resource "aws_instance" "instance_2" {
 
 resource "aws_instance" "instance_3" {
   ami                         = "ami-0be2609ba883822ec"
-  instance_type               = "t2.micro"
+  instance_type               = "t2.medium"
   availability_zone           = "us-east-1a"
   key_name                    = aws_key_pair.key_pair.key_name
   associate_public_ip_address = "true"
@@ -81,7 +81,7 @@ resource "aws_instance" "instance_3" {
 
 resource "aws_instance" "instance_4" {
   ami                         = "ami-0be2609ba883822ec"
-  instance_type               = "t2.micro"
+  instance_type               = "t2.medium"
   availability_zone           = "us-east-1a"
   key_name                    = aws_key_pair.key_pair.key_name
   associate_public_ip_address = "true"
@@ -94,7 +94,7 @@ resource "aws_instance" "instance_4" {
 
 resource "aws_instance" "instance_5" {
   ami                         = "ami-0be2609ba883822ec"
-  instance_type               = "t2.micro"
+  instance_type               = "t2.medium"
   availability_zone           = "us-east-1a"
   key_name                    = aws_key_pair.key_pair.key_name
   associate_public_ip_address = "true"

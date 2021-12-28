@@ -6,24 +6,26 @@ services:
     image: "datamechanics/spark:3.2-latest"
     ports:
       - "8080:8080"
-    networks:
-      - spark-network
+    environment:
+      - CORES=1
+      - MEMORY=3G
     deploy:
       placement:
         # set node labels using docker node update --label-add key=value <NODE ID> from swarm manager
         constraints:
-          - node.labels.role==master
+          - node.labels.role==worker
+    networks:
+      - spark-network
 
   spark-worker:
     image: "datamechanics/spark:3.2-latest"
     ports:
       - "8081:8081"
     environment:
-      - CORES=3
-      - MEMORY=4G
+      - CORES=1
+      - MEMORY=3G
     deploy:
       placement:
-        # set node labels using docker node update --label-add key=value <NODE ID> from swarm manager
         constraints:
           - node.labels.role==worker
       replicas: 3
@@ -33,24 +35,22 @@ services:
   driver:
     image: "maven:3.8.4-openjdk-11"
     ports:
-      - "8080:8080"
+      - "8090:8080"
     deploy:
       placement:
-        # set node labels using docker node update --label-add key=value <NODE ID> from swarm manager
         constraints:
-          - node.labels.role==manager
+          - node.labels.role==master
     networks:
       - spark-network
 
   generator:
     image: "maven:3.8.4-openjdk-11"
     ports:
-      - "8080:8080"
+      - "8091:8080"
     deploy:
       placement:
-        # set node labels using docker node update --label-add key=value <NODE ID> from swarm manager
         constraints:
-          - node.labels.role==generator
+          - node.labels.role==master
     networks:
       - spark-network
 
@@ -62,9 +62,8 @@ services:
       - KAFKA_ZOOKEEPER_CONNECT=""
     deploy:
       placement:
-        # set node labels using docker node update --label-add key=value <NODE ID> from swarm manager
         constraints:
-          - node.labels.role==generator
+          - node.labels.role==master
     networks:
       - spark-network
 
@@ -80,9 +79,8 @@ services:
       - ZOO_LOG4J_PROP="INFO,ROLLINGFILE" # Redirects logging to /logs/zookeeper.log, the image already has a volume in /logs
     deploy:
       placement:
-        # set node labels using docker node update --label-add key=value <NODE ID> from swarm manager
         constraints:
-          - node.labels.role==manager
+          - node.labels.role==master
     networks:
       - spark-network
 
