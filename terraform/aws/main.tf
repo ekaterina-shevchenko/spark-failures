@@ -105,19 +105,6 @@ resource "aws_instance" "instance_5" {
   iam_instance_profile        = aws_iam_instance_profile.instance_profile.name
 }
 
-resource "aws_instance" "instance_6" {
-  ami                         = "ami-0be2609ba883822ec"
-  instance_type               = "t2.micro"
-  availability_zone           = "us-east-1a"
-  key_name                    = aws_key_pair.key_pair.key_name
-  associate_public_ip_address = "true"
-  vpc_security_group_ids      = [aws_security_group.sg_in.id, aws_security_group.sg_out.id]
-  subnet_id                   = aws_subnet.public_subnet.id
-  user_data                   = file("worker_userdata.sh")
-  private_ip                  = "192.1.0.106"
-  iam_instance_profile        = aws_iam_instance_profile.instance_profile.name
-}
-
 # Create S3 bucket with public reading access
 resource "aws_s3_bucket" "s3_bucket" {
   bucket        = "spark-failures-bucket"
@@ -144,6 +131,14 @@ resource "aws_s3_bucket" "s3_bucket" {
 #   source        = "${path.module}/../module_name/target/compiled_code_name.jar"
 #   force_destroy = true
 # }
+
+# Upload docker-compose.yml file to S3 bucket
+resource "aws_s3_bucket_object" "docker_compose_upload" {
+  bucket        = aws_s3_bucket.s3_bucket.id
+  key           = "docker-compose.yml"
+  source        = "${path.module}/../../docker-compose.yml"
+  force_destroy = true
+}
 
 # Define security group allowing inbound public access
 resource "aws_security_group" "sg_in" {
