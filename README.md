@@ -31,12 +31,11 @@ terraform destroy
 2. Upon creation of EC2 machines, terraform installs Docker on each machine and starts docker engine (see worker_userdata.sh)
 3. On the swarm manager node, terraform initializes swarm cluster and then uses generated token to add workers to the cluster, running a corresponding command on each worker (see manager_userdata.sh and worker_userdata.sh).
 4. Once the swarm cluster is all set up, swarm manager creates docker overlay network and all required containers using docker-compose.yml file (terraform runs the command). The current cluster topology is as follows:
-   * Node 1 (swarm manager) - Spark driver, Zookeeper (Spark HA mode)
-   * Node 2 (swarm worker) - Generator, Kafka
-   * Node 3 (swarm worker) - Spark master
+   * Node 1 (swarm manager) - Spark driver, Zookeeper (Spark HA mode), Generator, Kafka
+   * Node 2 (swarm worker) - Spark master
+   * Node 3 (swarm worker) - Spark worker
    * Node 4 (swarm worker) - Spark worker
    * Node 5 (swarm worker) - Spark worker
-   * Node 6 (swarm worker) - Spark worker
 5. Upon creation, generator starts to generate event records and write them to a kafka topic. Driver creates a SparkContext, specifies operator topology and submits a job to Spark. This is run by swarm commands.
 
 **Warning**
@@ -52,12 +51,11 @@ For testing purposes, terraform script creates public S3 buckets and places EC2 
 1. Terraform connects to on-premise cluster machines, installs Docker on each machine and starts docker engine. All VMs should share the same network.
 2. On the swarm manager node, terraform initializes swarm cluster and then uses generated token to add workers to the cluster, running a corresponding command on each worker.
 3. Once the swarm cluster is all set up, swarm manager creates docker overlay network and all required containers using docker-compose.yml file (terraform runs the command). The current cluster topology is as follows:
-    * Node 1 (swarm manager) - Spark driver, Zookeeper (Spark HA mode)
-    * Node 2 (swarm worker) - Generator, Kafka
-    * Node 3 (swarm worker) - Spark master
+    * Node 1 (swarm manager) - Spark driver, Zookeeper (Spark HA mode), Generator, Kafka
+    * Node 2 (swarm worker) - Spark master
+    * Node 3 (swarm worker) - Spark worker
     * Node 4 (swarm worker) - Spark worker
     * Node 5 (swarm worker) - Spark worker
-    * Node 6 (swarm worker) - Spark worker
 4. Upon creation, generator starts to generate event records and write them to a kafka topic. Driver creates a SparkContext, specifies operator topology and submits a job to Spark. This is run by swarm commands.
 
 ## Implementation details
