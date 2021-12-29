@@ -3,7 +3,7 @@ version: "3"
 services:
 
   spark-master:
-    image: "datamechanics/spark:3.2-latest"
+    image: "datamechanics/spark:jvm-only-3.2-latest"
     ports:
       - "8080:8080"
     environment:
@@ -18,7 +18,7 @@ services:
       - spark-network
 
   spark-worker:
-    image: "datamechanics/spark:3.2-latest"
+    image: "datamechanics/spark:jvm-only-3.2-latest"
     ports:
       - "8081:8081"
     environment:
@@ -57,9 +57,9 @@ services:
   kafka:
     image: "wurstmeister/kafka:latest"
     ports:
-      - "8081:8081"
+      - "8082:8081"
     environment:
-      - KAFKA_ZOOKEEPER_CONNECT=""
+      - KAFKA_ZOOKEEPER_CONNECT=localhost:2181
     deploy:
       placement:
         constraints:
@@ -71,9 +71,6 @@ services:
     image: "zookeeper:latest" # This image is configured with volumes at /data and /datalog to hold the Zookeeper in-memory database snapshots and the transaction log of updates to the database
     ports:
       - "2181:2181"
-      - "2888:2888"
-      - "3888:3888"
-      - "8080:8080"
     restart: always # Since the Zookeeper "fails fast" it's better to always restart it
     environment:
       - ZOO_LOG4J_PROP="INFO,ROLLINGFILE" # Redirects logging to /logs/zookeeper.log, the image already has a volume in /logs

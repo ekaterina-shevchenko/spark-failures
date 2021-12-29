@@ -41,8 +41,8 @@ resource "aws_route_table_association" "web_public_rt_association" {
 
 # Create an EC2 instance
 resource "aws_instance" "instance_1" {
-  ami                         = "ami-0be2609ba883822ec"
-  instance_type               = "t2.medium"
+  ami                         = "ami-0ed9277fb7eb570c9"
+  instance_type               = "t2.small"
   availability_zone           = "us-east-1a"
   key_name                    = aws_key_pair.key_pair.key_name
   associate_public_ip_address = "true"
@@ -89,19 +89,6 @@ resource "aws_instance" "instance_4" {
   subnet_id                   = aws_subnet.public_subnet.id
   user_data                   = file("worker_userdata.sh")
   private_ip                  = "192.1.0.104"
-  iam_instance_profile        = aws_iam_instance_profile.instance_profile.name
-}
-
-resource "aws_instance" "instance_5" {
-  ami                         = "ami-0be2609ba883822ec"
-  instance_type               = "t2.medium"
-  availability_zone           = "us-east-1a"
-  key_name                    = aws_key_pair.key_pair.key_name
-  associate_public_ip_address = "true"
-  vpc_security_group_ids      = [aws_security_group.sg_in.id, aws_security_group.sg_out.id]
-  subnet_id                   = aws_subnet.public_subnet.id
-  user_data                   = file("worker_userdata.sh")
-  private_ip                  = "192.1.0.105"
   iam_instance_profile        = aws_iam_instance_profile.instance_profile.name
 }
 
@@ -171,7 +158,7 @@ resource "aws_security_group" "sg_out" {
 # Add key-pair
 resource "aws_key_pair" "key_pair" {
   key_name   = "ec2"
-  public_key = file("keypair/ec2.pub")
+  public_key = file("../keypair/ec2.pub")
 }
 
 # Create IAM profile role which grants access to S3 buckets
@@ -213,7 +200,7 @@ resource "aws_iam_role_policy" "iam_role_policy" {
     {
       "Effect": "Allow",
       "Action": ["s3:ListBucket"],
-      "Resource": ["arn:aws:s3:::url-shortener-instances-bucket-sources"]
+      "Resource": ["arn:aws:s3:::spark-failures-bucket"]
     },
     {
       "Effect": "Allow",
@@ -222,7 +209,7 @@ resource "aws_iam_role_policy" "iam_role_policy" {
         "s3:GetObject",
         "s3:DeleteObject"
       ],
-      "Resource": ["arn:aws:s3:::url-shortener-instances-bucket-sources/*"]
+      "Resource": ["arn:aws:s3:::spark-failures-bucket/*"]
     }
   ]
 }
