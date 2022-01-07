@@ -3,32 +3,31 @@ version: "3"
 services:
 
   spark-master:
-    image: "datamechanics/spark:jvm-only-3.2-latest"
+    image: "bitnami/spark:3.2.0"
     ports:
       - "8080:8080"
     environment:
-      - CORES=1
-      - MEMORY=3G
+      - SPARK_MODE=master # default
     deploy:
       placement:
-        # set node labels using docker node update --label-add key=value <NODE ID> from swarm manager
         constraints:
           - node.labels.role==worker
     networks:
       - spark-network
 
   spark-worker:
-    image: "datamechanics/spark:jvm-only-3.2-latest"
+    image: "bitnami/spark:3.2.0"
     ports:
       - "8081:8081"
     environment:
-      - CORES=1
-      - MEMORY=3G
+      - SPARK_MODE=worker
+      - SPARK_WORKER_CORES=1
+      - SPARK_WORKER_MEMORY=3G
     deploy:
       placement:
         constraints:
           - node.labels.role==worker
-      replicas: 3
+      replicas: 1
     networks:
       - spark-network
 
@@ -42,6 +41,8 @@ services:
           - node.labels.role==master
     networks:
       - spark-network
+    depends_on:
+      - kafka
 
   generator:
     image: "maven:3.8.4-openjdk-11"
@@ -53,19 +54,25 @@ services:
           - node.labels.role==master
     networks:
       - spark-network
+    depends_on:
+      - kafka
 
   kafka:
     image: "wurstmeister/kafka:latest"
     ports:
-      - "8082:8081"
+      - "9092:9092"
     environment:
-      - KAFKA_ZOOKEEPER_CONNECT=localhost:2181
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_LISTENERS=PLAINTEXT://kafka:9092 # Makes Kafka broker accessible in the docker overlay network (no external): https://rmoff.net/2018/08/02/kafka-listeners-explained/
     deploy:
       placement:
         constraints:
           - node.labels.role==master
     networks:
       - spark-network
+    depends_on:
+      - zookeeper
 
   zookeeper:
     image: "zookeeper:latest" # This image is configured with volumes at /data and /datalog to hold the Zookeeper in-memory database snapshots and the transaction log of updates to the database
