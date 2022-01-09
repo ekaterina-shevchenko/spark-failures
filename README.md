@@ -31,7 +31,7 @@ terraform destroy
 2. Upon creation of EC2 machines, terraform installs Docker on each machine and starts docker engine (see worker_userdata.sh and manager_userdata.sh)
 3. On the swarm manager node, terraform initializes swarm cluster and then uses generated token to add workers to the cluster, running a corresponding command on each worker (see manager_userdata.sh and worker_userdata.sh).
 4. Once the swarm cluster is all set up, swarm manager creates docker overlay network and all required containers using docker-compose.yml file (terraform runs the command). The current cluster topology is as follows:
-   * Node 1 (swarm manager) - Spark driver, Zookeeper (Spark HA mode), Generator, Kafka
+   * Node 1 (swarm manager) - Spark driver, Zookeeper (Spark HA mode, Kafka), Generator, Kafka
    * Node 2 (swarm worker) - Spark master
    * Node 3 (swarm worker) - Spark worker
    * Node 4 (swarm worker) - Spark worker
@@ -51,7 +51,7 @@ For testing purposes, terraform script creates public S3 buckets and places EC2 
 1. Terraform connects to on-premise cluster machines, installs Docker on each machine and starts docker engine. All VMs should share the same network.
 2. On the swarm manager node, terraform initializes swarm cluster and then uses generated token to add workers to the cluster, running a corresponding command on each worker.
 3. Once the swarm cluster is all set up, swarm manager creates docker overlay network and all required containers using docker-compose.yml file (terraform runs the command). The current cluster topology is as follows:
-    * Node 1 (swarm manager) - Spark driver, Zookeeper (Spark HA mode), Generator, Kafka
+    * Node 1 (swarm manager) - Spark driver, Zookeeper (Spark HA mode, Kafka), Generator, Kafka
     * Node 2 (swarm worker) - Spark master
     * Node 3 (swarm worker) - Spark worker
     * Node 4 (swarm worker) - Spark worker
@@ -63,10 +63,14 @@ For testing purposes, terraform script creates public S3 buckets and places EC2 
 ### Exposed ports
 
 **Spark master**
+   * 8080 - WebUI port
+   * 7077 - port used by spark workers to connect to the master
 
 **Spark worker**
+   * 8081 - ...
 
 **Kafka**
+   * 9092 - advertized port for client connections
 
 **Zookeeper**
    * 2181 - client port
@@ -83,5 +87,21 @@ For testing purposes, terraform script creates public S3 buckets and places EC2 
 ## Notes
 
 1. We should make sure that swarm load balancing will not impact distribution of events' records among Spark workers. It can be ensured via two ways:
-    * Create swarm workers as different resources (on contrary to one replicated resource). Then traffic will not be load-balanced.
-    * Make events' traffic going not through ingress network (load balancing is conducted by IPVS in a container created by docker swarm by default), which most probably will be the case since kafka and Spark workers will be deployed in the same overlay network.
+   * Create swarm workers as different resources (on contrary to one replicated resource). Then traffic will not be load-balanced.
+   * Make events' traffic going not through ingress network (load balancing is conducted by IPVS in a container created by docker swarm by default), which most probably will be the case since kafka and Spark workers will be deployed in the same overlay network.
+   
+2. For Generator to provide required for tests throughput, the following Kafka Producer tuning was required:
+   * Disabling DEBUG logging (it produced too much IO traffic upon sending records to Kafka) via changing log level in logback.xml
+   * Producer.flush() is a blocking operation that parks threads for a while (up to ~2 seconds per one flush), thus it was moved to a separate thread.
+   * Producer's `buffer.memory` default value is 32 MB, which is not enough for such workload. Threads started to spend up to 65% of time waiting for memory allocation. Changing the setting to ~100 MB increased throughput drastically. (When thread filled a batch, it asks the buffer to allocate a new batch. If buffer is full, thread is parked until buffer gets enough free space).
+   * `buffer.memory` should be chosen as a multiple of `batch.size`, because otherwise some residual memory would have never been allocated, since the buffer allocates memory in batches.
+   * Increasing `batch.size` also increases throughput, since more data is sent "at one time".
+   * By default, `max.request.size` is 1 MB, which slows down sending data to Kafka. Setting it 5 MB has increased throughput.
+   * Another important component of performance tuning is compression via `compression.type` property.
+   * Tuning parameter `linger.ms` hasn't shown any noticeable difference. This parameter by default is set to 0 and specifies how many `ms` data is additionally "parked" for new data to come so that they can sent together in one request (to get more data is sent per request).
+   
+3. The used Kafka docker image creates a volume at `/kafka`. If data is not deleted via Producer API call, it can lead to device-out-of-memory. If it happened, clean up the volume manually in docker's `/var/lib/docker/volumes` (follow instructions here: https://stackoverflow.com/questions/38532483/where-is-var-lib-docker-on-mac-os-x) and better mount a host's folder to `/kafka` to be able to delete it easily manually (via docker-compose `volumes`).
+
+## TODOs:
+
+1. Generator in container generates a way less records per second than while running on a host machine. It might be due to too little resources allocated to the container / JVM. Needs tuning in docker-compose / system parameters.

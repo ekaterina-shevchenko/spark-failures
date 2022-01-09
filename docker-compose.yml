@@ -4,6 +4,7 @@ services:
 
   spark-master:
     image: "bitnami/spark:3.2.0"
+    container_name: spark_master
     ports:
       - "8080:8080"
     environment:
@@ -14,9 +15,12 @@ services:
           - node.labels.role==worker
     networks:
       - spark-network
+    volumes:
+      - ./logs/master:/opt/bitnami/spark/logs
 
   spark-worker:
     image: "bitnami/spark:3.2.0"
+    container_name: spark_worker
     ports:
       - "8081:8081"
     environment:
@@ -30,9 +34,12 @@ services:
       replicas: 1
     networks:
       - spark-network
+    volumes:
+      - ./logs/worker:/opt/bitnami/spark/logs
 
   driver:
     image: "maven:3.8.4-openjdk-11"
+    container_name: spark_driver
     ports:
       - "8090:8080"
     deploy:
@@ -45,9 +52,12 @@ services:
       - kafka
 
   generator:
-    image: "maven:3.8.4-openjdk-11"
+    image: "generator"
+    container_name: generator
     ports:
       - "8091:8080"
+    environment:
+      - BOOTSTRAP_KAFKA_SERVER=kafka:9092
     deploy:
       placement:
         constraints:
@@ -59,23 +69,31 @@ services:
 
   kafka:
     image: "wurstmeister/kafka:latest"
+    container_name: kafka
     ports:
-      - "9092:9092"
+      - "29092:29092"
     environment:
       - KAFKA_BROKER_ID=1
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-      - KAFKA_LISTENERS=PLAINTEXT://kafka:9092 # Makes Kafka broker accessible in the docker overlay network (no external): https://rmoff.net/2018/08/02/kafka-listeners-explained/
+      - KAFKA_LISTENERS=HOST_INTERNAL://:29092, DOCKER_INTERNAL://kafka:9092 # Makes Kafka broker accessible in the docker overlay network (no external): https://rmoff.net/2018/08/02/kafka-listeners-explained/
+      - KAFKA_ADVERTISED_LISTENERS=HOST_INTERNAL://localhost:29092, DOCKER_INTERNAL://kafka:9092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=HOST_INTERNAL:PLAINTEXT, DOCKER_INTERNAL:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME=DOCKER_INTERNAL
+
     deploy:
       placement:
         constraints:
           - node.labels.role==master
     networks:
       - spark-network
+    volumes:
+      - ./kafka:/kafka # Keep this volume if you don't want to run into device-out-of-memory error. Otherwise you would need either to delete Kafka topic's data via Producer API call, or navigate to docker's /var/lib/docker/volumes/ and do it manually (instructions: https://stackoverflow.com/questions/38532483/where-is-var-lib-docker-on-mac-os-x)
     depends_on:
       - zookeeper
 
   zookeeper:
     image: "zookeeper:latest" # This image is configured with volumes at /data and /datalog to hold the Zookeeper in-memory database snapshots and the transaction log of updates to the database
+    container_name: spark_failures_zookeeper
     ports:
       - "2181:2181"
     restart: always # Since the Zookeeper "fails fast" it's better to always restart it
