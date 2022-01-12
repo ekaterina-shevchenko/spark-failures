@@ -1,8 +1,8 @@
-package de.tum.spark.failures.generator;
+package de.tum.spark.failures.generator.generators;
 
-import de.tum.spark.failures.domain.Advertisement;
-import de.tum.spark.failures.domain.Product;
-import de.tum.spark.failures.domain.User;
+import de.tum.spark.failures.common.domain.Advertisement;
+import de.tum.spark.failures.generator.domain.Product;
+import de.tum.spark.failures.generator.domain.User;
 
 import java.util.List;
 

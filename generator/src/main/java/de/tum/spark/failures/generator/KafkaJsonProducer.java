@@ -1,4 +1,4 @@
-package de.tum.spark.failures;
+package de.tum.spark.failures.generator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;

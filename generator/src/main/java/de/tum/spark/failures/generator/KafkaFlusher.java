@@ -1,6 +1,6 @@
-package de.tum.spark.failures;
+package de.tum.spark.failures.generator;
 
-import de.tum.spark.failures.domain.Event;
+import de.tum.spark.failures.common.domain.Event;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.clients.producer.Producer;
 

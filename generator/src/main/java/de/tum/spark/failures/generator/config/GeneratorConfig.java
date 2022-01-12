@@ -1,4 +1,4 @@
-package de.tum.spark.failures.config;
+package de.tum.spark.failures.generator.config;
 
 import lombok.extern.slf4j.Slf4j;
 

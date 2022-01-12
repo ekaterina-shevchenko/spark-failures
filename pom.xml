@@ -4,13 +4,15 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>tum.de</groupId>
+    <groupId>de.tum</groupId>
     <artifactId>spark-failures</artifactId>
     <packaging>pom</packaging>
     <version>1.0</version>
     <modules>
         <module>generator</module>
-        <module>driver</module>
+        <module>streaming</module>
+        <module>structured-streaming</module>
+        <module>common</module>
     </modules>
     <properties>
         <java.version>11</java.version>

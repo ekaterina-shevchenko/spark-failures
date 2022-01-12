@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>spark-failures</artifactId>
-        <groupId>tum.de</groupId>
+        <groupId>de.tum</groupId>
         <version>1.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -28,7 +28,7 @@
                     <appendAssemblyId>false</appendAssemblyId>
                     <archive>
                         <manifest>
-                            <mainClass>de.tum.spark.failures.Application</mainClass>
+                            <mainClass>de.tum.spark.failures.generator.Application</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>
@@ -54,6 +54,11 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>1.2.10</version>
+        </dependency>
+        <dependency>
+            <groupId>de.tum</groupId>
+            <artifactId>common</artifactId>
+            <version>1.0</version>
         </dependency>
     </dependencies>
 

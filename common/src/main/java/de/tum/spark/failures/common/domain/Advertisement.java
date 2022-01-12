@@ -1,4 +1,4 @@
-package de.tum.spark.failures.domain;
+package de.tum.spark.failures.common.domain;
 
 import lombok.Data;
 

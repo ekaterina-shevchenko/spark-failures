@@ -1,11 +1,11 @@
-package de.tum.spark.failures;
+package de.tum.spark.failures.generator;
 
-import de.tum.spark.failures.config.GeneratorConfig;
-import de.tum.spark.failures.domain.Event;
-import de.tum.spark.failures.domain.Product;
-import de.tum.spark.failures.domain.User;
-import de.tum.spark.failures.generator.AdvertisementGenerator;
-import de.tum.spark.failures.generator.PurchaseGenerator;
+import de.tum.spark.failures.common.domain.Event;
+import de.tum.spark.failures.generator.config.GeneratorConfig;
+import de.tum.spark.failures.generator.domain.Product;
+import de.tum.spark.failures.generator.domain.User;
+import de.tum.spark.failures.generator.generators.AdvertisementGenerator;
+import de.tum.spark.failures.generator.generators.PurchaseGenerator;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -86,6 +86,7 @@ public class Application {
         props.put("max.request.size", 5_000_000);
         props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        props.put("max.in.flight.requests.per.connection", 50);
         KafkaProducer<String, String> kafkaProducer = new KafkaProducer<>(props);
         KafkaJsonProducer<Event> jsonProducer = new KafkaJsonProducer<>(kafkaProducer);
         return new KafkaLimitProducer<>(GeneratorConfig.THROUGHPUT, jsonProducer);

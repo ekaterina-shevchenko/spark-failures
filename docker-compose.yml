@@ -73,13 +73,13 @@ services:
     ports:
       - "29092:29092"
     environment:
+      - KAFKA_CREATE_TOPICS="output:3:1" # topic_name:number_of_partitions_number_of_replicas
       - KAFKA_BROKER_ID=1
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
       - KAFKA_LISTENERS=HOST_INTERNAL://:29092, DOCKER_INTERNAL://kafka:9092 # Makes Kafka broker accessible in the docker overlay network (no external): https://rmoff.net/2018/08/02/kafka-listeners-explained/
       - KAFKA_ADVERTISED_LISTENERS=HOST_INTERNAL://localhost:29092, DOCKER_INTERNAL://kafka:9092
       - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=HOST_INTERNAL:PLAINTEXT, DOCKER_INTERNAL:PLAINTEXT
       - KAFKA_INTER_BROKER_LISTENER_NAME=DOCKER_INTERNAL
-
     deploy:
       placement:
         constraints:
@@ -87,7 +87,7 @@ services:
     networks:
       - spark-network
     volumes:
-      - ./kafka:/kafka # Keep this volume if you don't want to run into device-out-of-memory error. Otherwise you would need either to delete Kafka topic's data via Producer API call, or navigate to docker's /var/lib/docker/volumes/ and do it manually (instructions: https://stackoverflow.com/questions/38532483/where-is-var-lib-docker-on-mac-os-x)
+      - ./logs/kafka:/kafka # Keep this volume if you don't want to run into device-out-of-memory error. Otherwise you would need either to delete Kafka topic's data via Producer API call, or navigate to docker's /var/lib/docker/volumes/ and do it manually (instructions: https://stackoverflow.com/questions/38532483/where-is-var-lib-docker-on-mac-os-x)
     depends_on:
       - zookeeper
 

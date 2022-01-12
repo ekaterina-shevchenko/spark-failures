@@ -99,6 +99,7 @@ For testing purposes, terraform script creates public S3 buckets and places EC2 
    * By default, `max.request.size` is 1 MB, which slows down sending data to Kafka. Setting it 5 MB has increased throughput.
    * Another important component of performance tuning is compression via `compression.type` property.
    * Tuning parameter `linger.ms` hasn't shown any noticeable difference. This parameter by default is set to 0 and specifies how many `ms` data is additionally "parked" for new data to come so that they can sent together in one request (to get more data is sent per request).
+   * Parameter `max.in.flight.requests.per.connection`defines how many messages can be sent to Kafka without acknowledgement. By default, it equals to 5. Increasing it may increase throughput.
    
 3. The used Kafka docker image creates a volume at `/kafka`. If data is not deleted via Producer API call, it can lead to device-out-of-memory. If it happened, clean up the volume manually in docker's `/var/lib/docker/volumes` (follow instructions here: https://stackoverflow.com/questions/38532483/where-is-var-lib-docker-on-mac-os-x) and better mount a host's folder to `/kafka` to be able to delete it easily manually (via docker-compose `volumes`).
 
