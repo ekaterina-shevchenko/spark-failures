@@ -37,7 +37,7 @@ public class Application {
                             LocationStrategies.PreferConsistent(),
                             ConsumerStrategies.Subscribe(
                                     Collections.singletonList(topic),
-                                    KafkaConfig.initKafkaParameters())));
+                                    KafkaConfig.initKafkaConsumerParameters())));
         }
         ObjectMapper recordMapper = new ObjectMapper();
         streams.forEach(s -> s
@@ -53,7 +53,7 @@ public class Application {
     private static void sendMessage(JavaRDD<Tuple2<String, Integer>> rdd) {
             Producer<String, Integer> producer = KafkaProducerFactory.getKafkaProducer();
             rdd.foreach(pair -> { // TODO: send rdds by partitions, not as a whole
-                ProducerRecord<String, Integer> record = new ProducerRecord<>(topic, pair._1, pair._2);
+                ProducerRecord<String, Integer> record = new ProducerRecord<>(KafkaConfig.TOPIC_OUTPUT, pair._1, pair._2);
                 producer.send(record);
             });
     }

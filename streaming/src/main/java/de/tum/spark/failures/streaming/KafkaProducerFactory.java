@@ -9,7 +9,7 @@ public class KafkaProducerFactory {
     private static final Producer<String, Integer> kafkaProducer;
 
     static {
-        kafkaProducer = new KafkaProducer<>(KafkaConfig.initKafkaParameters());
+        kafkaProducer = new KafkaProducer<>(KafkaConfig.initKafkaProducerParameters());
     }
 
     public static Producer<String, Integer> getKafkaProducer() {
