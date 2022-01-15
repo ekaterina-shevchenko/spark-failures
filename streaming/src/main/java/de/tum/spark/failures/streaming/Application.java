@@ -51,10 +51,12 @@ public class Application {
     }
 
     private static void sendMessage(JavaRDD<Tuple2<String, Integer>> rdd) {
-            Producer<String, Integer> producer = KafkaProducerFactory.getKafkaProducer();
-            rdd.foreach(pair -> { // TODO: send rdds by partitions, not as a whole
+            rdd.foreachPartition(partition -> {
+                Producer<String, Integer> producer = KafkaProducerFactory.getKafkaProducer();
+                partition.forEachRemaining(pair -> {
                 ProducerRecord<String, Integer> record = new ProducerRecord<>(KafkaConfig.TOPIC_OUTPUT, pair._1, pair._2);
                 producer.send(record);
+                });
             });
     }
 

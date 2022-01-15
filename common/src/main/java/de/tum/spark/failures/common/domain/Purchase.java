@@ -1,14 +1,26 @@
 package de.tum.spark.failures.common.domain;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
 @Data
-public class Purchase implements Event{
+@NoArgsConstructor
+@AllArgsConstructor
+public class Purchase implements Event {
 
-    private final Integer userId;
-    private final String product;
-    private final Integer number;
-    private final Long timestamp = new Date().getTime();
+    private Integer userId;
+    private String product;
+    private Integer number;
+    private Long timestamp;
+
+    public Purchase(Integer userId, String product, Integer number) {
+        this.userId = userId;
+        this.product = product;
+        this.number = number;
+        timestamp = new Date().getTime();
+    }
+
 }

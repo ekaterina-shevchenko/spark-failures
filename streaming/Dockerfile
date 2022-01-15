@@ -3,15 +3,18 @@
 #
 FROM maven:3.8.4-openjdk-8-slim AS build
 
-COPY common /home/app/common
-COPY generator /home/app/generator
-COPY streaming /home/app/streaming
-COPY structured-streaming /home/app/structured-streaming
+COPY common/src /home/app/common/src
+COPY common/pom.xml /home/app/common/pom.xml
+COPY generator/src /home/app/generator/src
+COPY generator/pom.xml /home/app/generator/pom.xml
+COPY streaming/src /home/app/streaming/src
+COPY streaming/pom.xml /home/app/streaming/pom.xml
+COPY structured-streaming/src /home/app/structured-streaming/src
+COPY structured-streaming/pom.xml /home/app/structured-streaming/pom.xml
 COPY pom.xml /home/app/
 
 # it's required for child modules to be able to find siblings modules in local maven repository
 RUN cd /home/app/ && mvn clean install && cd /
-RUN mvn -f /home/app/streaming/pom.xml clean package
 
 #
 # Package stage & spark download

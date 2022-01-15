@@ -15,8 +15,6 @@ services:
           - node.labels.role==master
     networks:
       - spark-network
-    volumes:
-      - ./logs/master:/opt/bitnami/spark/logs
 
   spark-worker:
     image: "bitnami/spark:3.2.0"
@@ -34,11 +32,9 @@ services:
       replicas: 1
     networks:
       - spark-network
-    volumes:
-      - ./logs/worker:/opt/bitnami/spark/logs
 
   driver:
-    image: 'driver:latest'
+    image: "driver:latest"
     container_name: spark_driver
     ports:
       - "8090:8080"
@@ -53,7 +49,7 @@ services:
       - kafka
 
   generator:
-    image: "generator"
+    image: "generator:latest"
     container_name: generator
     ports:
       - "8091:8080"

@@ -104,6 +104,30 @@ For testing purposes, terraform script creates public S3 buckets and places EC2 
    
 3. The used Kafka docker image creates a volume at `/kafka`. If data is not deleted via Producer API call, it can lead to device-out-of-memory. If it happened, clean up the volume manually in docker's `/var/lib/docker/volumes` (follow [these](https://stackoverflow.com/questions/38532483/where-is-var-lib-docker-on-mac-os-x) instructions) and better mount a host's folder to `/kafka` to be able to delete it easily manually (via docker-compose `volumes`).
 
-## TODOs:
+4. Optimizations applied to Spark Streaming job:
+   * As TCP connections cannot be serialized and transferred via network, kafka producers must be created on executors. It can be done via creating the producer per partition:
+   ```
+   dstream.foreachRDD { rdd =>
+      rdd.foreachPartition { partitionOfRecords =>
+      val producer = createKafkaProducer()
+      partitionOfRecords.foreach { message =>
+         connection.send(message)
+      }
+      producer.close()
+      }
+   }
+   ```
+   This approach is better than creating executor per each record, but it's not very scalable either, because then every `batch.size`time interval (e.g. 2 seconds) there will be created and closed **number.of.partitions** producers.
+   Better way is to use Spark broadcast mechanism. [KafkaSink](https://blog.allegro.tech/2015/08/spark-kafka-integration.html) class is a smart wrapper for a Kafka producer. Instead of sending the producer itself, we send only a “recipe” how to create it in an executor. 
+   The class is serializable because Kafka producer is initialized just before first use on an executor. 
+   Constructor of KafkaSink class takes a function which returns Kafka producer lazily when invoked. Once the Kafka producer is created, it is assigned to producer variable to avoid initialization on every send() call.
+   
+   ```
+   val kafkaSink = sparkContext.broadcast(KafkaSink(conf))
 
-1. Generator in container generates a way less records per second than while running on a host machine. It might be due to too little resources allocated to the container / JVM. Needs tuning in docker-compose / system parameters.
+   dstream.foreachRDD { rdd =>
+      rdd.foreach { message =>
+         kafkaSink.value.send(message)
+      }
+   }
+   ```
