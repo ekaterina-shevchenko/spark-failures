@@ -1,7 +1,7 @@
 #
 # Build stage
 #
-FROM maven:3.8.4-openjdk-11-slim AS build
+FROM maven:3.8.4-openjdk-8-slim AS build
 
 COPY common /home/app/common
 COPY generator /home/app/generator
