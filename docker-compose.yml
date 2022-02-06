@@ -45,6 +45,8 @@ services:
           - node.labels.role==manager
     networks:
       - spark-network
+    volumes:
+      - ./logs/checkpoint:/opt/bitnami/checkpoint # structured streaming will save checkpoints in this location
     depends_on:
       - kafka
 

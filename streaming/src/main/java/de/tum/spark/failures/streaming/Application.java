@@ -26,7 +26,7 @@ public class Application {
     public static void main(String[] args) throws InterruptedException {
         JavaStreamingContext streamingContext = new JavaStreamingContext(
                 StreamingConfig.SPARK_MASTER,
-                "streaming-application",
+                "streaming-app-purchase-count",
                 StreamingConfig.BATCH_DURATION);
 
         List<JavaInputDStream<ConsumerRecord<String, String>>> streams = new ArrayList<>();
@@ -44,7 +44,7 @@ public class Application {
                 .map(record -> recordMapper.readValue(record.value(), Purchase.class))
                 .window(StreamingConfig.WINDOW, StreamingConfig.SLIDE)
                 .map(record -> new Tuple2<>(record.getProduct(), record.getNumber()))
-                .reduce((pair1, pair2) -> new Tuple2<>(pair1._1, pair1._2 + pair1._2))
+                .reduce((pair1, pair2) -> new Tuple2<>(pair1._1, pair1._2 + pair2._2))
                 .foreachRDD(Application::sendMessage));
         streamingContext.start();
         streamingContext.awaitTermination();

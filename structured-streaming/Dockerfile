@@ -21,9 +21,10 @@ FROM bitnami/spark:3.2.0
 ENV SPARK_MODE=worker
 
 COPY --from=build /home/app/structured-streaming/target/structured-streaming-fat-1.0.jar /usr/local/lib/structured-streaming.jar
+RUN mkdir /opt/bitnami/checkpoint
 
 ENTRYPOINT ["/opt/bitnami/spark/bin/spark-submit", "--master=spark://spark-master:7077", \
             "--deploy-mode=client", "--driver-memory=3g", \
             "--executor-memory=3g", "--executor-cores=2", \
             "--conf", "spark.jars.ivy=/tmp/.ivy", \
-            "--class=de.tum.spark.failures.streaming.Application", "/usr/local/lib/structured-streaming.jar"]
+            "--class=de.tum.spark.failures.structured.streaming.Application", "/usr/local/lib/structured-streaming.jar"]
