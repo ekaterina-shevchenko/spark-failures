@@ -27,4 +27,6 @@ ENTRYPOINT ["/opt/bitnami/spark/bin/spark-submit", "--master=spark://spark-maste
             "--deploy-mode=client", "--driver-memory=3g", \
             "--executor-memory=3g", "--executor-cores=2", \
             "--conf", "spark.jars.ivy=/tmp/.ivy", \
+            "--conf", "spark.ui.prometheus.enabled=true", \
+            "--conf", "spark.executor.processTreeMetrics.enabled=true", \
             "--class=de.tum.spark.failures.structured.streaming.Application", "/usr/local/lib/structured-streaming.jar"]

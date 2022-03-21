@@ -14,6 +14,6 @@ public class PurchaseGenerator extends Generator<Purchase> {
 
     @Override
     protected Purchase generateInstance(User user, Product product) {
-        return new Purchase(user.getUserId(), product.getProduct(), random.nextInt(7));
+        return new Purchase(user.getUserId(), product.getProduct(), random.nextInt(7)  + 1);
     }
 }

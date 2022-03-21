@@ -4,10 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.tum.spark.failures.common.domain.Purchase;
 import de.tum.spark.failures.streaming.config.KafkaConfig;
 import de.tum.spark.failures.streaming.config.StreamingConfig;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.streaming.api.java.JavaInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka010.ConsumerStrategies;
@@ -15,42 +16,38 @@ import org.apache.spark.streaming.kafka010.KafkaUtils;
 import org.apache.spark.streaming.kafka010.LocationStrategies;
 import scala.Tuple2;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
+@Slf4j
 public class Application {
 
     private static final String topic = KafkaConfig.TOPIC_PURCHASES;
 
     public static void main(String[] args) throws InterruptedException {
+        System.out.println("Restarted");
         JavaStreamingContext streamingContext = new JavaStreamingContext(
                 StreamingConfig.SPARK_MASTER,
                 "streaming-app-purchase-count",
                 StreamingConfig.BATCH_DURATION);
-
-        List<JavaInputDStream<ConsumerRecord<String, String>>> streams = new ArrayList<>();
-        for (int i = 0; i < StreamingConfig.INPUT_DSTREAMS; i++) {
-            streams.add(
-                    KafkaUtils.createDirectStream(
-                            streamingContext,
-                            LocationStrategies.PreferConsistent(),
-                            ConsumerStrategies.Subscribe(
-                                    Collections.singletonList(topic),
-                                    KafkaConfig.initKafkaConsumerParameters())));
-        }
         ObjectMapper recordMapper = new ObjectMapper();
-        streams.forEach(s -> s
-                .map(record -> recordMapper.readValue(record.value(), Purchase.class))
-                .window(StreamingConfig.WINDOW, StreamingConfig.SLIDE)
-                .map(record -> new Tuple2<>(record.getProduct(), record.getNumber()))
-                .reduce((pair1, pair2) -> new Tuple2<>(pair1._1, pair1._2 + pair2._2))
-                .foreachRDD(Application::sendMessage));
+        JavaInputDStream<ConsumerRecord<String, String>> directStream =
+            KafkaUtils.createDirectStream(
+                streamingContext,
+                LocationStrategies.PreferConsistent(),
+                ConsumerStrategies.Subscribe(
+                    Collections.singletonList(topic),
+                    KafkaConfig.initKafkaConsumerParameters()
+                )
+            );
+        directStream.map(record -> recordMapper.readValue(record.value(), Purchase.class))
+            .mapToPair(record -> new Tuple2<>(record.getProduct(), record.getNumber()))
+            .reduceByKey(Integer::sum)
+            .foreachRDD(Application::sendMessage);
         streamingContext.start();
         streamingContext.awaitTermination();
     }
 
-    private static void sendMessage(JavaRDD<Tuple2<String, Integer>> rdd) {
+    private static void sendMessage(JavaPairRDD<String, Integer> rdd) {
             rdd.foreachPartition(partition -> {
                 Producer<String, Integer> producer = KafkaProducerFactory.getKafkaProducer();
                 partition.forEachRemaining(pair -> {

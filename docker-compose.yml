@@ -9,6 +9,8 @@ services:
       - "8080:8080"
     environment:
       - SPARK_MODE=master # default
+    volumes:
+      - ./logs/spark/metrics.properties:/opt/bitnami/spark/conf/metrics.properties
     deploy:
       placement:
         constraints:
@@ -18,13 +20,53 @@ services:
 
   spark-worker:
     image: "bitnami/spark:3.2.0"
-    container_name: spark_worker
+    container_name: spark_worker_1
     ports:
       - "8081:8081"
     environment:
       - SPARK_MODE=worker
       - SPARK_WORKER_CORES=2
       - SPARK_WORKER_MEMORY=3G
+    volumes:
+      - ./logs/spark/metrics.properties:/opt/bitnami/spark/conf/metrics.properties
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role==worker
+      replicas: 1
+    networks:
+      - spark-network
+
+  spark-worker-second:
+    image: "bitnami/spark:3.2.0"
+    container_name: spark_worker_2
+    ports:
+      - "8082:8082"
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=3G
+    volumes:
+      - ./logs/spark/metrics.properties:/opt/bitnami/spark/conf/metrics.properties
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role==worker
+      replicas: 1
+    networks:
+      - spark-network
+
+  spark-worker-third:
+    image: "bitnami/spark:3.2.0"
+    container_name: spark_worker_3
+    ports:
+      - "8083:8083"
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=3G
+    volumes:
+      - ./logs/spark/metrics.properties:/opt/bitnami/spark/conf/metrics.properties
     deploy:
       placement:
         constraints:
@@ -37,7 +79,7 @@ services:
     image: "driver:latest"
     container_name: spark_driver
     ports:
-      - "8090:8080"
+      - "4040:4040"
     user: root # This fixes KerberosAuthException during spark-submit: https://issueexplorer.com/issue/bitnami/bitnami-docker-spark/27
     deploy:
       placement:
@@ -46,6 +88,7 @@ services:
     networks:
       - spark-network
     volumes:
+      - ./logs/spark/metrics.properties:/opt/bitnami/spark/conf/metrics.properties
       - ./logs/checkpoint:/opt/bitnami/checkpoint # structured streaming will save checkpoints in this location
     depends_on:
       - kafka
@@ -71,6 +114,7 @@ services:
     container_name: kafka
     ports:
       - "29092:29092"
+      - "7071:7071"
     environment:
       - KAFKA_CREATE_TOPICS="output:3:1" # topic_name:number_of_partitions_number_of_replicas
       - KAFKA_BROKER_ID=1
@@ -79,6 +123,7 @@ services:
       - KAFKA_ADVERTISED_LISTENERS=HOST_INTERNAL://localhost:29092, DOCKER_INTERNAL://kafka:9092
       - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=HOST_INTERNAL:PLAINTEXT, DOCKER_INTERNAL:PLAINTEXT
       - KAFKA_INTER_BROKER_LISTENER_NAME=DOCKER_INTERNAL
+      - KAFKA_OPTS=-javaagent:/usr/app/jmx_prometheus_javaagent.jar=7071:/usr/app/prom-jmx-agent-config.yml
     deploy:
       placement:
         constraints:
@@ -86,13 +131,51 @@ services:
     networks:
       - spark-network
     volumes:
+      - ./logs/jmx/jmx_prometheus_javaagent-0.16.1.jar:/usr/app/jmx_prometheus_javaagent.jar
+      - ./logs/kafka/prom-jmx-agent-config.yml:/usr/app/prom-jmx-agent-config.yml
       - ./logs/kafka:/kafka # Keep this volume if you don't want to run into device-out-of-memory error. Otherwise you would need either to delete Kafka topic's data via Producer API call, or navigate to docker's /var/lib/docker/volumes/ and do it manually (instructions: https://stackoverflow.com/questions/38532483/where-is-var-lib-docker-on-mac-os-x)
     depends_on:
       - zookeeper
 
+  grafana:
+    image: bitnami/grafana
+    container_name: spark_grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - spark-network
+
+  prometheus:
+    image: bitnami/prometheus
+    container_name: prometheus
+    volumes:
+      - ./logs/prometheus/conf:/opt/bitnami/prometheus/conf
+      - ./logs/prometheus/data:/opt/bitnami/prometheus/data
+    ports:
+      - "9090:9090"
+    depends_on:
+      - kafka
+    networks:
+      - spark-network
+
+  prometheus-kafka:
+    image: bitnami/kafka-exporter
+    container_name: kafka_exporter
+    ports:
+      - "9308:9308"
+    command: ["--kafka.server=kafka:9092"]
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role==manager
+    depends_on:
+      - kafka
+    networks:
+      - spark-network
+
   zookeeper:
     image: "zookeeper:latest" # This image is configured with volumes at /data and /datalog to hold the Zookeeper in-memory database snapshots and the transaction log of updates to the database
-    container_name: spark_failures_zookeeper
+    container_name: zookeeper
     ports:
       - "2181:2181"
     restart: always # Since the Zookeeper "fails fast" it's better to always restart it

@@ -16,14 +16,20 @@ public class Worker<T extends Generator<? extends Event>> implements Runnable {
 
     @Override
     public void run() {
-        while (true) {
-            try {
-                Event event = generator.generate();
-                ProducerRecord<String, Event> record = new ProducerRecord<>(topic, UUID.randomUUID().toString(), event);
-                producer.send(record);
-            } catch (IllegalStateException ignored) {
+        try {
+            while (true) {
+                try {
+                    Event event = generator.generate();
+                    ProducerRecord<String, Event> record =
+                        new ProducerRecord<>(topic, UUID.randomUUID().toString(), event);
+                    producer.send(record);
+                    Thread.sleep(1000);
+                } catch (IllegalStateException ignored) {
 
+                }
             }
+        } catch (InterruptedException e) {
+
         }
     }
 }

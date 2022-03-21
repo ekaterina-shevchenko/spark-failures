@@ -131,14 +131,3 @@ For testing purposes, terraform script creates public S3 buckets and places EC2 
       }
    }
    ```
-   
-## Thesis structure
-0. Abstract / Introduction - what the thesis aims to research, what problems addresses.
-1. Spark - introduction, what problems addresses, how it compares to other distributed data processing systems.
-2. Architecture layout - main components, their responsibilities.
-3. Two streaming APIs: Streaming and Structured Streaming. How they work, main operations, what is performed on driver and what on executors. Program's logical flow.
-4. Failure models. Tests.
-5. Laboratory setup, including terraform, docker swarm. Possible configuration for running the system on-premise and in AWS cloud. Optimizations applied in Spark, in Kafka, in Generator. Achieved normal latencies and throughput.
-6. Measurements. How we measure latencies, throughput, correctness.
-7. Test analysis and results - explanations.
-8. Conclusions & future work.
