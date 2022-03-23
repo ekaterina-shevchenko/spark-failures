@@ -13,6 +13,7 @@
         <module>streaming</module>
         <module>structured-streaming</module>
         <module>common</module>
+        <module>validator</module>
     </modules>
     <properties>
         <java.version>8</java.version>

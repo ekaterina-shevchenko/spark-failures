@@ -32,9 +32,12 @@ public class Application {
             .groupBy(
                 functions.window(functions.col("kafkaTimestamp"), "5 seconds", "5 seconds"),
                 functions.col("product")
-            ).sum("number")
-            .withColumnRenamed("sum(number)", "number")
-            .selectExpr("product as key", "CAST(CAST(number AS int) as BINARY) as value");
+            ).agg(functions.to_json(functions.struct(
+                        functions.expr("sum(number)").cast("int").as("totalNumber"),
+                        functions.col("window").getItem("start").as("windowStart"),
+                        functions.col("window").getItem("end").as("windowEnd"),
+                        functions.col("product"))
+                ).as("value"));
         StreamingQuery query = writeOutputStream(rowDataset);
         query.awaitTermination();
     }
@@ -45,11 +48,6 @@ public class Application {
                 .format("kafka")
                 .option("kafka.bootstrap.servers", KafkaConfig.BOOTSTRAP_KAFKA_SERVER)
                 .option("subscribe", KafkaConfig.TOPIC_PURCHASES)
-//                .option("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
-//                .option("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
-//                .option("group.id", "consumer-group")
-//                .option("auto.offset.reset", "latest")
-//                .option("enable.auto.commit", false)
                 .load();
     }
 
@@ -59,17 +57,8 @@ public class Application {
                 .format("kafka")
                 .option("kafka.bootstrap.servers", KafkaConfig.BOOTSTRAP_KAFKA_SERVER)
                 .option("topic", KafkaConfig.TOPIC_OUTPUT)
-//                .option("acks", "all")
-//                .option("retries", 10)
-//                .option("buffer.memory", 100_000_000)
-//                .option("batch.size", 100_000)
-//                .option("compression.type", "gzip")
-//                .option("max.request.size", 5_000_000)
-//                .option("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
-//                .option("value.serializer", "org.apache.kafka.common.serialization.IntegerSerializer")
-//                .option("max.in.flight.requests.per.connection", 50)
                 .option("checkpointLocation", "logs/checkpoint1")
-                .outputMode(OutputMode.Append())
+                .outputMode(OutputMode.Update())
                 .start();
     }
 }

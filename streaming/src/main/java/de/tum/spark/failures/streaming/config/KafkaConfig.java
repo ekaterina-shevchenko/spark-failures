@@ -33,7 +33,7 @@ public class KafkaConfig {
         kafkaParams.put("compression.type", "gzip");
         kafkaParams.put("max.request.size", 5_000_000);
         kafkaParams.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        kafkaParams.put("value.serializer", "org.apache.kafka.common.serialization.IntegerSerializer");
+        kafkaParams.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         kafkaParams.put("max.in.flight.requests.per.connection", 50);
         return kafkaParams;
     }

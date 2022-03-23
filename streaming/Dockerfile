@@ -11,6 +11,7 @@ COPY streaming/src /home/app/streaming/src
 COPY streaming/pom.xml /home/app/streaming/pom.xml
 COPY structured-streaming/src /home/app/structured-streaming/src
 COPY structured-streaming/pom.xml /home/app/structured-streaming/pom.xml
+COPY validator /home/app/validator
 COPY pom.xml /home/app/
 
 # it's required for child modules to be able to find siblings modules in local maven repository
@@ -26,7 +27,7 @@ ENV SPARK_MODE=worker
 COPY --from=build /home/app/streaming/target/streaming-fat-1.0.jar /usr/local/lib/streaming.jar
 
 ENTRYPOINT ["/opt/bitnami/spark/bin/spark-submit", "--master=spark://spark-master:7077", \
-            "--deploy-mode=client", "--driver-memory=3g", \
+            "--deploy-mode=client", "--driver-memory=3g", "--num-executors=3", \
             "--executor-memory=3g", "--executor-cores=2", \
             "--conf", "spark.jars.ivy=/tmp/.ivy", \
             "--conf", "spark.ui.prometheus.enabled=true", \

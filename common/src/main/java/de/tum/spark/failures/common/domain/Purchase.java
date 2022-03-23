@@ -15,6 +15,8 @@ public class Purchase implements Event {
     private String product;
     private Integer number;
     private Long timestamp;
+    private Long sparkIngestionTime;
+    private Long kafkaIngestionTime;
 
     public Purchase(Integer userId, String product, Integer number) {
         this.userId = userId;

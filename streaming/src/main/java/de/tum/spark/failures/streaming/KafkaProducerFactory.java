@@ -4,15 +4,17 @@ import de.tum.spark.failures.streaming.config.KafkaConfig;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 
+import java.util.Map;
+
 public class KafkaProducerFactory {
 
-    private static final Producer<String, Integer> kafkaProducer;
+    private static final Producer<Object, String> kafkaProducer;
 
     static {
         kafkaProducer = new KafkaProducer<>(KafkaConfig.initKafkaProducerParameters());
     }
 
-    public static Producer<String, Integer> getKafkaProducer() {
+    public static Producer<Object, String> getKafkaProducer() {
         return kafkaProducer;
     }
 }

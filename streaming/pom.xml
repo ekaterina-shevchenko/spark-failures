@@ -28,7 +28,7 @@
                     <appendAssemblyId>false</appendAssemblyId>
                     <archive>
                         <manifest>
-                            <mainClass>de.tum.spark.failures.streaming.Application</mainClass>
+                            <mainClass>de.tum.spark.failures.streaming.EmmaApplication</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

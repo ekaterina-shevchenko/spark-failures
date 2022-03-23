@@ -9,6 +9,6 @@ public class StreamingConfig {
     public static final Duration BATCH_DURATION = Durations.seconds(5);
     public static final Duration WINDOW = Durations.seconds(5);
     public static final Duration SLIDE = Durations.seconds(5);
-
+    public static final String CHECKPOINT_PATH = "/opt/bitnami/checkpoint";
 
 }

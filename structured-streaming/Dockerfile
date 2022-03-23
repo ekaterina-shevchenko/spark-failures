@@ -8,6 +8,7 @@ COPY generator /home/app/generator
 COPY streaming /home/app/streaming
 COPY structured-streaming /home/app/structured-streaming
 COPY pom.xml /home/app/
+COPY validator /home/app/validator
 
 # it's required for child modules to be able to find siblings modules in local maven repository
 RUN cd /home/app/ && mvn clean install && cd /
@@ -24,7 +25,7 @@ COPY --from=build /home/app/structured-streaming/target/structured-streaming-fat
 RUN mkdir /opt/bitnami/checkpoint
 
 ENTRYPOINT ["/opt/bitnami/spark/bin/spark-submit", "--master=spark://spark-master:7077", \
-            "--deploy-mode=client", "--driver-memory=3g", \
+            "--deploy-mode=client", "--driver-memory=3g", "--num-executors=3", \
             "--executor-memory=3g", "--executor-cores=2", \
             "--conf", "spark.jars.ivy=/tmp/.ivy", \
             "--conf", "spark.ui.prometheus.enabled=true", \

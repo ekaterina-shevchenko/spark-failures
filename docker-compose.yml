@@ -92,6 +92,7 @@ services:
       - ./logs/checkpoint:/opt/bitnami/checkpoint # structured streaming will save checkpoints in this location
     depends_on:
       - kafka
+      - generator
 
   generator:
     image: "generator:latest"
@@ -187,6 +188,21 @@ services:
           - node.labels.role==manager
     networks:
       - spark-network
+
+  #gremlin:
+  #  image: "gremlin/gremlin:latest"
+  #  container_name: gremlin
+  #  ports:
+  #    - ":"
+  #  environment:
+  #    - GREMLIN_TEAM_ID=8882f35b-8baa-4265-82f3-5b8baa82659b
+  #    - GREMLIN_TEAM_SECRET=6e06d523-16ec-4c00-86d5-2316ecec00f0
+  #  deploy:
+  #    placement:
+  #      constraints:
+  #        - node.labels.role==manager
+  #  networks:
+  #    - spark-network
 
 networks:
   spark-network:
