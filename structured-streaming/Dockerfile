@@ -4,15 +4,14 @@
 FROM maven:3.8.4-openjdk-11-slim AS build
 
 COPY common /home/app/common
-COPY generator /home/app/generator
-COPY streaming /home/app/streaming
+COPY generator/pom.xml /home/app/generator/pom.xml
+COPY streaming/pom.xml /home/app/streaming/pom.xml
 COPY structured-streaming /home/app/structured-streaming
 COPY pom.xml /home/app/
-COPY validator /home/app/validator
+COPY metrics-collector/pom.xml /home/app/metrics-collector/pom.xml
 
 # it's required for child modules to be able to find siblings modules in local maven repository
-RUN cd /home/app/ && mvn clean install && cd /
-RUN mvn -f /home/app/structured-streaming/pom.xml clean package
+RUN cd /home/app/ && mvn -projects !streaming,!metrics-collector,!generator package
 
 #
 # Package stage & spark download

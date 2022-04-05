@@ -11,7 +11,7 @@ COPY streaming/src /home/app/streaming/src
 COPY streaming/pom.xml /home/app/streaming/pom.xml
 COPY structured-streaming/src /home/app/structured-streaming/src
 COPY structured-streaming/pom.xml /home/app/structured-streaming/pom.xml
-COPY validator /home/app/validator
+COPY metrics-collector /home/app/metrics-collector
 COPY pom.xml /home/app/
 
 # it's required for child modules to be able to find siblings modules in local maven repository
