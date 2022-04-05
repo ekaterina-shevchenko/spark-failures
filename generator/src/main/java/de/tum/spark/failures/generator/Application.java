@@ -4,7 +4,6 @@ import de.tum.spark.failures.common.domain.Event;
 import de.tum.spark.failures.generator.config.GeneratorConfig;
 import de.tum.spark.failures.generator.domain.Product;
 import de.tum.spark.failures.generator.domain.User;
-import de.tum.spark.failures.generator.generators.AdvertisementGenerator;
 import de.tum.spark.failures.generator.generators.PurchaseGenerator;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -26,33 +25,27 @@ import java.util.stream.Stream;
 
 public class Application {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
         List<User> users = readUsers();
         List<Product> products = readProducts();
 
         AdminClient kafkaAdmin = initKafkaAdmin();
         kafkaAdmin.createTopics(
                 Stream.of(
-                        new NewTopic(GeneratorConfig.TOPIC_ADS, 3, (short) 1),
-                        new NewTopic(GeneratorConfig.TOPIC_PURCHASES, 3, (short) 1)
+                        new NewTopic(GeneratorConfig.TOPIC_PURCHASES, 3, (short) 1),
+                        new NewTopic(GeneratorConfig.TOPIC_OUTPUT, 3, (short) 1)
                 ).collect(Collectors.toSet()));
         kafkaAdmin.close();
         Producer<String, Event> kafkaProducer = initKafkaProducer();
 
-        AdvertisementGenerator advertisementGenerator = new AdvertisementGenerator(users, products);
-        Worker<AdvertisementGenerator> worker1 = new Worker<>(GeneratorConfig.TOPIC_ADS, advertisementGenerator, kafkaProducer);
-
         PurchaseGenerator purchaseGenerator = new PurchaseGenerator(users, products);
         Worker<PurchaseGenerator> worker2 = new Worker<>(GeneratorConfig.TOPIC_PURCHASES, purchaseGenerator, kafkaProducer);
 
-        KafkaFlusher kafkaFlusher = new KafkaFlusher(kafkaProducer);
-
-        Thread thread1_1 = new Thread(worker1);
-        Thread thread2_1 = new Thread(worker2);
-        Thread thread3 = new Thread(kafkaFlusher);
-        thread1_1.start();
-        thread2_1.start();
-        thread3.start();
+        Thread thread = new Thread(worker2);
+        Thread.sleep(60000); // Gives time to spark to initialize and start job execution
+        thread.start();
+        thread.join();
+        kafkaProducer.flush();
     }
 
     private static List<User> readUsers() throws IOException {
@@ -79,14 +72,8 @@ public class Application {
         Map<String, Object> props = new HashMap<>();
         props.put("bootstrap.servers", GeneratorConfig.BOOTSTRAP_KAFKA_SERVER);
         props.put("acks", "all");
-        props.put("retries", 10);
-        props.put("buffer.memory", 100_000_000);
-        props.put("batch.size", 100_000);
-        props.put("compression.type", "gzip");
-        props.put("max.request.size", 5_000_000);
         props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("max.in.flight.requests.per.connection", 50);
         KafkaProducer<String, String> kafkaProducer = new KafkaProducer<>(props);
         KafkaJsonProducer<Event> jsonProducer = new KafkaJsonProducer<>(kafkaProducer);
         return new KafkaLimitProducer<>(GeneratorConfig.THROUGHPUT, jsonProducer);
