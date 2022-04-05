@@ -2,6 +2,35 @@ version: "3"
 
 services:
 
+  metrics-collector:
+    image: "metrics-collector:latest"
+    container_name: metrics-collector
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role==manager
+    networks:
+      - spark-network
+    depends_on:
+      - generator
+      - mariadb
+
+  mariadb:
+    container_name: spark-mariadb
+    image: mariadb:10.4
+    command: --character-set-server=utf8 --lower_case_table_names
+    volumes:
+      - ./logs/db/init.sql:/docker-entrypoint-initdb.d/1.sql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=spark
+      - MYSQL_DATABASE=spark
+      - MYSQL_USER=spark
+      - MYSQL_PASSWORD=spark
+    networks:
+      - spark-network
+
   spark-master:
     image: "bitnami/spark:3.2.0"
     container_name: spark_master
@@ -18,7 +47,7 @@ services:
     networks:
       - spark-network
 
-  spark-worker:
+  spark-worker-1:
     image: "bitnami/spark:3.2.0"
     container_name: spark_worker_1
     ports:
@@ -37,7 +66,7 @@ services:
     networks:
       - spark-network
 
-  spark-worker-second:
+  spark-worker-2:
     image: "bitnami/spark:3.2.0"
     container_name: spark_worker_2
     ports:
@@ -56,7 +85,7 @@ services:
     networks:
       - spark-network
 
-  spark-worker-third:
+  spark-worker-3:
     image: "bitnami/spark:3.2.0"
     container_name: spark_worker_3
     ports:
@@ -91,9 +120,9 @@ services:
       - ./logs/spark/metrics.properties:/opt/bitnami/spark/conf/metrics.properties
       - ./logs/checkpoint:/opt/bitnami/checkpoint # structured streaming will save checkpoints in this location
     depends_on:
+      - spark-master
+      - spark-worker
       - kafka
-      - generator
-
   generator:
     image: "generator:latest"
     container_name: generator
@@ -108,7 +137,7 @@ services:
     networks:
       - spark-network
     depends_on:
-      - kafka
+      - driver
 
   kafka:
     image: "wurstmeister/kafka:latest"
@@ -124,7 +153,7 @@ services:
       - KAFKA_ADVERTISED_LISTENERS=HOST_INTERNAL://localhost:29092, DOCKER_INTERNAL://kafka:9092
       - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=HOST_INTERNAL:PLAINTEXT, DOCKER_INTERNAL:PLAINTEXT
       - KAFKA_INTER_BROKER_LISTENER_NAME=DOCKER_INTERNAL
-      - KAFKA_OPTS=-javaagent:/usr/app/jmx_prometheus_javaagent.jar=7071:/usr/app/prom-jmx-agent-config.yml
+#      - KAFKA_OPTS=-javaagent:/usr/app/jmx_prometheus_javaagent.jar=7071:/usr/app/prom-jmx-agent-config.yml
     deploy:
       placement:
         constraints:
@@ -132,15 +161,17 @@ services:
     networks:
       - spark-network
     volumes:
-      - ./logs/jmx/jmx_prometheus_javaagent-0.16.1.jar:/usr/app/jmx_prometheus_javaagent.jar
-      - ./logs/kafka/prom-jmx-agent-config.yml:/usr/app/prom-jmx-agent-config.yml
+#      - ./logs/jmx/jmx_prometheus_javaagent-0.16.1.jar:/usr/app/jmx_prometheus_javaagent.jar
+#      - ./logs/kafka/prom-jmx-agent-config.yml:/usr/app/prom-jmx-agent-config.yml
       - ./logs/kafka:/kafka # Keep this volume if you don't want to run into device-out-of-memory error. Otherwise you would need either to delete Kafka topic's data via Producer API call, or navigate to docker's /var/lib/docker/volumes/ and do it manually (instructions: https://stackoverflow.com/questions/38532483/where-is-var-lib-docker-on-mac-os-x)
     depends_on:
       - zookeeper
 
   grafana:
-    image: bitnami/grafana
+    image: "preconfigured-grafana:latest"
     container_name: spark_grafana
+    volumes:
+      - ./logs/grafana/data:/opt/bitnami/grafana/data
     ports:
       - "3000:3000"
     networks:
@@ -154,21 +185,6 @@ services:
       - ./logs/prometheus/data:/opt/bitnami/prometheus/data
     ports:
       - "9090:9090"
-    depends_on:
-      - kafka
-    networks:
-      - spark-network
-
-  prometheus-kafka:
-    image: bitnami/kafka-exporter
-    container_name: kafka_exporter
-    ports:
-      - "9308:9308"
-    command: ["--kafka.server=kafka:9092"]
-    deploy:
-      placement:
-        constraints:
-          - node.labels.role==manager
     depends_on:
       - kafka
     networks:
@@ -206,4 +222,4 @@ services:
 
 networks:
   spark-network:
-    driver: overlay
+    driver: bridge

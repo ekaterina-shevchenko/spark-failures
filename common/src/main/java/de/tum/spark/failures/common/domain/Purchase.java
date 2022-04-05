@@ -25,4 +25,8 @@ public class Purchase implements Event {
         timestamp = new Date().getTime();
     }
 
+    @Override
+    public String getKey() {
+        return product;
+    }
 }
