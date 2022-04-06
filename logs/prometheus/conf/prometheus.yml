@@ -1,0 +1,45 @@
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: 'spark-master'
+    scrape_interval: 1s
+    static_configs:
+      - targets: ['spark_master:8080']
+    metrics_path: "/metrics/master/prometheus"
+  - job_name: 'spark-worker-1'
+    scrape_interval: 1s
+    static_configs:
+      - targets: ['spark_worker:8081']
+    metrics_path: "/metrics/prometheus"
+  - job_name: 'spark-worker-2'
+    scrape_interval: 1s
+    static_configs:
+      - targets: ['spark_worker:8082']
+    metrics_path: "/metrics/prometheus"
+  - job_name: 'spark-worker-3'
+    scrape_interval: 1s
+    static_configs:
+      - targets: ['spark_worker:8083']
+    metrics_path: "/metrics/prometheus"
+  - job_name: 'spark-driver'
+    scrape_interval: 1s
+    static_configs:
+      - targets: ['driver:4040']
+    metrics_path: "/metrics/prometheus"
+  - job_name: 'spark-executor'
+    scrape_interval: 1s
+    static_configs:
+      - targets: ['driver:4040']
+    metrics_path: "/metrics/executors/prometheus"
+  - job_name: 'kafka'
+    scrape_interval: 1s
+    static_configs:
+      - targets: ['prometheus-kafka:9308']
+  - job_name: 'kafka-jmx'
+    scrape_interval: 1s
+    static_configs:
+      - targets: ['kafka:7071']
+  - job_name: 'grafana'
+    scrape_interval: 1s
+    static_configs:
+      - targets: ['spark_grafana:3000']
