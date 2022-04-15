@@ -8,6 +8,7 @@ import de.tum.spark.failures.generator.generators.PurchaseGenerator;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.KafkaAdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -20,21 +21,23 @@ import java.io.Reader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Application {
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) throws IOException, InterruptedException, ExecutionException {
         List<User> users = readUsers();
         List<Product> products = readProducts();
 
         AdminClient kafkaAdmin = initKafkaAdmin();
-        kafkaAdmin.createTopics(
+        CreateTopicsResult result = kafkaAdmin.createTopics(
                 Stream.of(
                         new NewTopic(GeneratorConfig.TOPIC_PURCHASES, 3, (short) 1),
                         new NewTopic(GeneratorConfig.TOPIC_OUTPUT, 3, (short) 1)
                 ).collect(Collectors.toSet()));
+        result.all().get();
         kafkaAdmin.close();
         Producer<String, Event> kafkaProducer = initKafkaProducer();
 
