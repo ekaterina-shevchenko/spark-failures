@@ -55,8 +55,8 @@ public class CountersIncrementProcessor implements ProcessorSupplier<String, Pur
         long kafkaIngestionTime = record.timestamp();
         boolean good = false;
         for (TimeRange timeRange : Application.counters.keySet()) {
-          long from = timeRange.from + 3 * 60 * 60 * 1000;
-          long to = timeRange.to + 3 * 60 * 60 * 1000;
+          long from = timeRange.from;
+          long to = timeRange.to;
           if (from <= kafkaIngestionTime && to > kafkaIngestionTime && timeRange.product.equals(product)) {
             Application.counters.get(timeRange).incrementAndGet();
             good = true;

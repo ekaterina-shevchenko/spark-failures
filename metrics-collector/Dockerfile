@@ -16,4 +16,4 @@ RUN mvn -f /home/app/pom.xml -pl '!streaming,!structured-streaming,!generator,!c
 #
 FROM openjdk:11-jre-slim
 COPY --from=build /home/app/metrics-collector/target/metrics-collector-fat-1.0.jar /usr/local/lib/metrics-collector.jar
-CMD java -Dwait=180000 -DkafkaUrl=kafka:9092 -DjdbcUrl=jdbc:mysql://spark-mariadb:3306/spark -jar /usr/local/lib/metrics-collector.jar
+CMD java -Dwait=200000 -DkafkaUrl=kafka:9092 -DjdbcUrl=jdbc:mysql://spark-mariadb:3306/spark -jar /usr/local/lib/metrics-collector.jar

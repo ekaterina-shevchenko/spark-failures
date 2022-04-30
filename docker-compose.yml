@@ -141,6 +141,20 @@ services:
     depends_on:
       - driver
 
+  gremlin-driver:
+    image: "gremlin/gremlin:latest"
+    container_name: gremlin-driver
+    environment:
+    - GREMLIN_TEAM_ID=c2dce29f-7bcb-4e50-9ce2-9f7bcb6e50d0
+    - GREMLIN_TEAM_SECRET=fe591163-4064-4675-9911-634064e67530
+    tty: true
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role==manager
+    networks:
+      - spark-network
+
   kafka:
     image: "wurstmeister/kafka:latest"
     container_name: kafka
@@ -148,7 +162,7 @@ services:
       - "29092:29092"
       - "7071:7071"
     environment:
-      - KAFKA_CREATE_TOPICS="output:3:1" # topic_name:number_of_partitions_number_of_replicas
+      - KAFKA_CREATE_TOPICS="output:3:1,purchases:3:1" # topic_name:number_of_partitions_number_of_replicas
       - KAFKA_BROKER_ID=1
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
       - KAFKA_LISTENERS=HOST_INTERNAL://:29092, DOCKER_INTERNAL://kafka:9092 # Makes Kafka broker accessible in the docker overlay network (no external): https://rmoff.net/2018/08/02/kafka-listeners-explained/
@@ -162,10 +176,10 @@ services:
           - node.labels.role==manager
     networks:
       - spark-network
-    volumes:
+#    volumes:
 #      - ./logs/jmx/jmx_prometheus_javaagent-0.16.1.jar:/usr/app/jmx_prometheus_javaagent.jar
 #      - ./logs/kafka/prom-jmx-agent-config.yml:/usr/app/prom-jmx-agent-config.yml
-      - ./logs/kafka:/kafka # Keep this volume if you don't want to run into device-out-of-memory error. Otherwise you would need either to delete Kafka topic's data via Producer API call, or navigate to docker's /var/lib/docker/volumes/ and do it manually (instructions: https://stackoverflow.com/questions/38532483/where-is-var-lib-docker-on-mac-os-x)
+#      - ./logs/kafka:/kafka # Keep this volume if you don't want to run into device-out-of-memory error. Otherwise you would need either to delete Kafka topic's data via Producer API call, or navigate to docker's /var/lib/docker/volumes/ and do it manually (instructions: https://stackoverflow.com/questions/38532483/where-is-var-lib-docker-on-mac-os-x)
     depends_on:
       - zookeeper
 
@@ -224,4 +238,4 @@ services:
 
 networks:
   spark-network:
-    driver: overlay
+    driver: bridge

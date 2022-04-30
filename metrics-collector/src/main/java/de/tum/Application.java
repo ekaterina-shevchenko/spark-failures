@@ -4,9 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.tum.common.Output;
 import de.tum.common.Purchase;
+import de.tum.common.StreamingOutput;
 import de.tum.structured.classes.TimeRange;
 import de.tum.structured.processors.CountersEnrichProcessor;
 import de.tum.structured.processors.CountersIncrementProcessor;
+import de.tum.structured.processors.CountersStreamingEnrichProcessor;
+import de.tum.structured.processors.CountersStreamingIncrementProcessor;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -35,8 +38,10 @@ import org.apache.kafka.streams.kstream.Consumed;
 public class Application {
 
   public static ConcurrentMap<TimeRange, AtomicLong> counters = new ConcurrentHashMap<>();
+  public static ConcurrentMap<StreamingOutput, AtomicLong> streamingCounters = new ConcurrentHashMap<>();
   public static AtomicLong purchases = new AtomicLong();
 
+  public static final boolean structured = System.getProperty("mode").equals("structured");
   private static final ObjectMapper objectMapper = new ObjectMapper();
   private static final Serde<String> stringSerde = Serdes.String();
 
@@ -77,11 +82,21 @@ public class Application {
       List<Entry<TimeRange, AtomicLong>> sortedCounterEntries = counters.entrySet().stream()
               .sorted(Comparator.comparingLong(e -> e.getKey().from))
               .collect(Collectors.toList());
-      for (Entry<TimeRange, AtomicLong> entry : sortedCounterEntries) {
-        AtomicLong purchasesCount = entry.getValue();
-        long totalCount = entry.getKey().totalCount;
-        writeToDbValidate(con, purchasesCount.get(), totalCount);
+      long from = sortedCounterEntries.get(0).getKey().from;
+      int totalCount = 0;
+      int counted = 0;
+      for (int i = 1; i < sortedCounterEntries.size(); i++) {
+        if (from == sortedCounterEntries.get(i).getKey().from) {
+          totalCount += sortedCounterEntries.get(i).getKey().totalCount;
+          counted += sortedCounterEntries.get(i).getValue().get();
+        } else {
+          writeToDbValidate(con, counted, totalCount, from);
+          counted = 0;
+          totalCount = 0;
+          from = sortedCounterEntries.get(i).getKey().from;
+        }
       }
+      writeToDbValidate(con, counted, totalCount, from);
       for (TimeRange timeRange : series) {
         long l = (timeRange.outputTimestamp - timeRange.minSparkIngestionTimestamp) / 1000;
         timeRange.avgTotalNumberPerSecond = timeRange.totalCount / l;
@@ -114,14 +129,15 @@ public class Application {
     }
   }
 
-  private static void writeToDbValidate(Connection connection, long purchasesCount, long totalCount)
+  private static void writeToDbValidate(Connection connection, long purchasesCount, long totalCount, long timestamp)
           throws SQLException {
     Statement statement = connection.createStatement();
     String st = MessageFormat.format(
-            "insert into spark_structured_streaming_validate(purchases_number, output_number)" +
-                    " value ({0},{1})",
+            "insert into spark_structured_streaming_validate(purchases_number, output_number, timestamp)" +
+                    " value ({0},{1},from_unixtime({2}))",
             String.valueOf(purchasesCount),
-            String.valueOf(totalCount)
+            String.valueOf(totalCount),
+            String.valueOf(timestamp / 1000)
     );
     statement.execute(st);
     statement.close();
@@ -166,27 +182,51 @@ public class Application {
 
   static Topology buildOutputTopology(Runnable stopCommand) {
     StreamsBuilder streamsBuilder = new StreamsBuilder();
-    streamsBuilder.stream("output", Consumed.with(stringSerde, stringSerde))
-        .map((k, v) -> toOutput(v))
-        .process(new CountersEnrichProcessor(() -> {
-          new Thread(stopCommand).start();
-        }));
+    if (structured) {
+      streamsBuilder.stream("output", Consumed.with(stringSerde, stringSerde))
+          .map((k, v) -> toStructuredOutput(v))
+          .process(new CountersEnrichProcessor(() -> {
+            new Thread(stopCommand).start();
+          }));
+    } else {
+      streamsBuilder.stream("output", Consumed.with(stringSerde, stringSerde))
+          .map((k, v) -> toStreamingOutput(v))
+          .process(new CountersStreamingEnrichProcessor(() -> {
+            new Thread(stopCommand).start();
+          }));
+    }
     return streamsBuilder.build();
   }
 
   static Topology buildPurchasesTopology(Runnable stopCommand) {
     StreamsBuilder streamsBuilder = new StreamsBuilder();
-    streamsBuilder.stream("purchases", Consumed.with(stringSerde, stringSerde))
-        .map((k, v) -> toPurchase(v))
-        .process(new CountersIncrementProcessor(() -> {
-          new Thread(stopCommand).start();
-        }));
+    if (structured) {
+      streamsBuilder.stream("purchases", Consumed.with(stringSerde, stringSerde))
+          .map((k, v) -> toPurchase(v))
+          .process(new CountersIncrementProcessor(() -> {
+            new Thread(stopCommand).start();
+          }));
+    } else {
+      streamsBuilder.stream("purchases", Consumed.with(stringSerde, stringSerde))
+          .map((k, v) -> toPurchase(v))
+          .process(new CountersStreamingIncrementProcessor(() -> {
+            new Thread(stopCommand).start();
+          }));
+    }
     return streamsBuilder.build();
   }
 
-  static KeyValue<String, Output> toOutput(String str) {
+  static KeyValue<String, Output> toStructuredOutput(String str) {
     try {
       Output output = objectMapper.readValue(str, Output.class);
+      return new KeyValue<>(output.getProduct(), output);
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException();
+    }
+  }
+  static KeyValue<String, StreamingOutput> toStreamingOutput(String str) {
+    try {
+      StreamingOutput output = objectMapper.readValue(str, StreamingOutput.class);
       return new KeyValue<>(output.getProduct(), output);
     } catch (JsonProcessingException e) {
       throw new RuntimeException();

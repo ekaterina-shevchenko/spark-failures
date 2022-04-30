@@ -27,7 +27,7 @@ public class Application {
         .select(functions.from_json(functions.col("message"), StreamingConfig.schema)
                     .as("json"), functions.col("kafkaTimestamp"), functions.col("sparkIngestionTimestamp"))
         .select("sparkIngestionTimestamp", "kafkaTimestamp", "json.product", "json.number")
-        .withWatermark("kafkaTimestamp", "0 seconds")
+        .withWatermark("kafkaTimestamp", "2 seconds")
         .groupBy(
             functions.window(functions.col("kafkaTimestamp"), "2 seconds", "2 seconds"),
             functions.col("product")

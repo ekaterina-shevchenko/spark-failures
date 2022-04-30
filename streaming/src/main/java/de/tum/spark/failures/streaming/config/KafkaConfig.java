@@ -12,13 +12,20 @@ public class KafkaConfig {
     public static final String BOOTSTRAP_KAFKA_SERVER = "kafka:9092";
     public static final String TOPIC_OUTPUT = "output";
 
+
+    public static Map<String, Object> initKafkaAdminParameters() {
+        Map<String, Object> kafkaParams = new HashMap<>();
+        kafkaParams.put("bootstrap.servers", BOOTSTRAP_KAFKA_SERVER);
+        return kafkaParams;
+    }
+
     public static Map<String, Object> initKafkaConsumerParameters() {
         Map<String, Object> kafkaParams = new HashMap<>();
         kafkaParams.put("bootstrap.servers", BOOTSTRAP_KAFKA_SERVER);
         kafkaParams.put("key.deserializer", StringDeserializer.class);
         kafkaParams.put("value.deserializer", StringDeserializer.class);
         kafkaParams.put("group.id", "consumer-group");
-        kafkaParams.put("auto.offset.reset", "latest");
+        kafkaParams.put("auto.offset.reset", "earliest");
         kafkaParams.put("enable.auto.commit", false);
         return kafkaParams;
     }

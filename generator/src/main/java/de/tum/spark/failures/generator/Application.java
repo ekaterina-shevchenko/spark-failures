@@ -21,13 +21,12 @@ import java.io.Reader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Application {
 
-    public static void main(String[] args) throws IOException, InterruptedException, ExecutionException {
+    public static void main(String[] args) throws IOException, InterruptedException {
         List<User> users = readUsers();
         List<Product> products = readProducts();
 
@@ -37,7 +36,11 @@ public class Application {
                         new NewTopic(GeneratorConfig.TOPIC_PURCHASES, 3, (short) 1),
                         new NewTopic(GeneratorConfig.TOPIC_OUTPUT, 3, (short) 1)
                 ).collect(Collectors.toSet()));
-        result.all().get();
+        try {
+            result.all().get();
+        } catch (Exception e) {
+
+        }
         kafkaAdmin.close();
         Producer<String, Event> kafkaProducer = initKafkaProducer();
 

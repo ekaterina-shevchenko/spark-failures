@@ -15,6 +15,7 @@ create table spark_structured_streaming_validate
 (
     id         bigint auto_increment primary key,
     output_number  bigint not null,
-    purchases_number  bigint not null
+    purchases_number  bigint not null,
+    timestamp timestamp not null
 );
 
