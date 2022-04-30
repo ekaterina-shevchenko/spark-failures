@@ -37,11 +37,14 @@ import org.apache.kafka.streams.kstream.Consumed;
 
 public class Application {
 
+  public static final Integer KAFKA_PARTITIONS = 6;
   public static ConcurrentMap<TimeRange, AtomicLong> counters = new ConcurrentHashMap<>();
   public static ConcurrentMap<StreamingOutput, AtomicLong> streamingCounters = new ConcurrentHashMap<>();
   public static AtomicLong purchases = new AtomicLong();
 
-  public static final boolean structured = System.getProperty("mode").equals("structured");
+  public static final boolean structured = System.getenv("MODE").equals("structured");
+  public static final String fault = System.getenv("FAULT");
+  public static final Integer testNumber = Integer.parseInt(System.getenv("TEST_NUMBER"));
   private static final ObjectMapper objectMapper = new ObjectMapper();
   private static final Serde<String> stringSerde = Serdes.String();
 
@@ -133,11 +136,12 @@ public class Application {
           throws SQLException {
     Statement statement = connection.createStatement();
     String st = MessageFormat.format(
-            "insert into spark_structured_streaming_validate(purchases_number, output_number, timestamp)" +
-                    " value ({0},{1},from_unixtime({2}))",
+            "insert into spark_structured_streaming_validate(purchases_number, output_number, timestamp, job, fault, test_number)" +
+                    " value ({0},{1},from_unixtime({2}),{3},{4},{5})",
             String.valueOf(purchasesCount),
             String.valueOf(totalCount),
-            String.valueOf(timestamp / 1000)
+            String.valueOf(timestamp / 1000),
+            structured? "structured-streaming": "streaming", fault, String.valueOf(testNumber)
     );
     statement.execute(st);
     statement.close();
@@ -147,10 +151,10 @@ public class Application {
       throws SQLException {
     Statement statement = connection.createStatement();
     String st = MessageFormat.format(
-        "insert into spark_structured_streaming_throughput(throughput, timestamp)" +
-        " value ({0},from_unixtime({1}))",
-        String.valueOf(throughput),
-        String.valueOf(timestamp)
+        "insert into spark_structured_streaming_throughput(throughput, timestamp, job, fault, test_number)" +
+        " value ({0},from_unixtime({1}),{2},{3},{4})",
+        String.valueOf(throughput), String.valueOf(timestamp),
+            structured? "structured-streaming": "streaming", fault, String.valueOf(testNumber)
     );
     statement.execute(st);
     statement.close();
@@ -163,9 +167,10 @@ public class Application {
     Statement statement = connection.createStatement();
     String st = MessageFormat.format(
         "insert into spark_structured_streaming_latency(end_to_end_latency, " +
-        "processing_latency, output_timestamp)" +
-        " value ({0},{1},from_unixtime({2}))",
-        String.valueOf(endToEndLatency), String.valueOf(processingLatency), String.valueOf(timestamp / 1000)
+        "processing_latency, output_timestamp, job, fault, test_number)" +
+        " value ({0},{1},from_unixtime({2}),{3},{4},{5})",
+        String.valueOf(endToEndLatency), String.valueOf(processingLatency), String.valueOf(timestamp / 1000),
+            structured? "structured-streaming": "streaming", fault, String.valueOf(testNumber)
     );
     statement.execute(st);
     statement.close();

@@ -17,8 +17,8 @@ public class KafkaProducerFactory {
     kafkaProducer = new KafkaProducer<>(KafkaConfig.initKafkaProducerParameters());
     AdminClient adminClient = KafkaAdminClient.create(KafkaConfig.initKafkaAdminParameters());
     try {
-      adminClient.createTopics(Arrays.asList(new NewTopic(KafkaConfig.TOPIC_OUTPUT, 3, (short) 1),
-                                             new NewTopic(KafkaConfig.TOPIC_PURCHASES, 3, (short) 1)))
+      adminClient.createTopics(Arrays.asList(new NewTopic(KafkaConfig.TOPIC_OUTPUT, 6, (short) 1),
+                                             new NewTopic(KafkaConfig.TOPIC_PURCHASES, 6, (short) 1)))
           .all()
           .get();
     } catch (InterruptedException e) {

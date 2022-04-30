@@ -2,6 +2,7 @@ package de.tum.structured.processors;
 
 import de.tum.Application;
 import de.tum.common.Output;
+import de.tum.common.StreamingOutput;
 import de.tum.structured.classes.TimeRange;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,19 +17,19 @@ import org.apache.kafka.streams.processor.api.Record;
 
 import static de.tum.Application.KAFKA_PARTITIONS;
 
-public class CountersEnrichProcessor implements ProcessorSupplier<String, Output, Void, Void> {
+public class CountersStreamingEnrichProcessor implements ProcessorSupplier<String, StreamingOutput, Void, Void> {
 
   private static final ConcurrentMap<Processor, Boolean> stoppedSet = new ConcurrentHashMap<>();
   private static final AtomicBoolean nextStep = new AtomicBoolean(false);
   private final Runnable asyncStopCommand;
 
-  public CountersEnrichProcessor(Runnable asyncStopCommand) {
+  public CountersStreamingEnrichProcessor(Runnable asyncStopCommand) {
     this.asyncStopCommand = asyncStopCommand;
   }
 
   @Override
-  public Processor<String, Output, Void, Void> get() {
-    return new Processor<String, Output, Void, Void>() {
+  public Processor<String, StreamingOutput, Void, Void> get() {
+    return new Processor<String, StreamingOutput, Void, Void>() {
       ProcessorContext<Void, Void> context;
       AtomicLong lastTimestamp = new AtomicLong();
 
@@ -48,31 +49,11 @@ public class CountersEnrichProcessor implements ProcessorSupplier<String, Output
       }
 
       @Override
-      public void process(Record<String, Output> record) {
+      public void process(Record<String, StreamingOutput> record) {
         long timestamp = record.timestamp();
         lastTimestamp.set(System.currentTimeMillis());
-        Long windowStart = record.value().getWindowStartLong();
-        Long windowEnd = record.value().getWindowEndLong();
-        String product = record.value().getProduct();
-        Integer totalNumber = record.value().getTotalNumber();
-        Integer totalCount = record.value().getTotalCount();
-        Long timestampLong = record.value().getTimestampLong();
-        Long minimumSparkIngestionTimestampLong =
-            record.value().getMinimumSparkIngestionTimestampLong();
-        Long minimumKafkaIngestionTimestampLong =
-            record.value().getMinimumKafkaIngestionTimestampLong();
-        TimeRange key = new TimeRange(
-            product,
-            minimumKafkaIngestionTimestampLong,
-            minimumSparkIngestionTimestampLong,
-            timestampLong,
-            timestamp,
-            windowStart,
-            windowEnd,
-            totalNumber,
-            totalCount
-        );
-        Application.counters.putIfAbsent(key, new AtomicLong());
+        StreamingOutput value = record.value();
+        Application.streamingCounters.putIfAbsent(value, new AtomicLong());
       }
     };
   }

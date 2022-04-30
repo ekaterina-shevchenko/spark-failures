@@ -33,8 +33,8 @@ public class Application {
         AdminClient kafkaAdmin = initKafkaAdmin();
         CreateTopicsResult result = kafkaAdmin.createTopics(
                 Stream.of(
-                        new NewTopic(GeneratorConfig.TOPIC_PURCHASES, 3, (short) 1),
-                        new NewTopic(GeneratorConfig.TOPIC_OUTPUT, 3, (short) 1)
+                        new NewTopic(GeneratorConfig.TOPIC_PURCHASES, 6, (short) 1),
+                        new NewTopic(GeneratorConfig.TOPIC_OUTPUT, 6, (short) 1)
                 ).collect(Collectors.toSet()));
         try {
             result.all().get();

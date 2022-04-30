@@ -19,8 +19,8 @@ public class KafkaConfig {
     static {
         AdminClient kafkaAdmin = initKafkaAdmin();
         List<NewTopic> topics = new ArrayList<>();
-        topics.add(new NewTopic(TOPIC_PURCHASES, 3, (short) 1));
-        topics.add(new NewTopic(TOPIC_OUTPUT, 3, (short) 1));
+        topics.add(new NewTopic(TOPIC_PURCHASES, 6, (short) 1));
+        topics.add(new NewTopic(TOPIC_OUTPUT, 6, (short) 1));
         kafkaAdmin.createTopics(topics);
         kafkaAdmin.close();
     }

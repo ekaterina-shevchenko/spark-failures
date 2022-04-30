@@ -66,7 +66,7 @@ public class Application {
         .option("kafka.acks","all") // TODO: check that it works
         .option("max.in.flight.requests.per.connection", 1) // TODO: check that it works
         .option("kafka.max.in.flight.requests.per.connection", 1) // TODO: check that it works
-        .option("checkpointLocation", "logs/checkpoint1")
+        .option("checkpointLocation", "s3a://spark-failures-checkpoints/checkpoints")
         .outputMode(OutputMode.Append())
         .start();
   }

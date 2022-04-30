@@ -21,11 +21,11 @@ FROM bitnami/spark:3.2.0
 ENV SPARK_MODE=worker
 
 COPY --from=build /home/app/structured-streaming/target/structured-streaming-fat-1.0.jar /usr/local/lib/structured-streaming.jar
-RUN mkdir /opt/bitnami/checkpoint
+COPY configs/spark/metrics.properties /opt/bitnami/spark/conf/metrics.properties
 
 ENTRYPOINT ["/opt/bitnami/spark/bin/spark-submit", "--master=spark://spark-master:7077", \
-            "--deploy-mode=client", "--driver-memory=3g", "--num-executors=3", \
-            "--executor-memory=3g", "--executor-cores=2", \
+            "--deploy-mode=client", "--driver-memory=5g", "--num-executors=6", \
+            "--executor-memory=5g", "--executor-cores=3", \
             "--conf", "spark.jars.ivy=/tmp/.ivy", \
             "--conf", "spark.ui.prometheus.enabled=true", \
             "--conf", "spark.executor.processTreeMetrics.enabled=true", \
