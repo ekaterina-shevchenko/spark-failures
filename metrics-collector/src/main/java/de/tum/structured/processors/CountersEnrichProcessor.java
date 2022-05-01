@@ -56,7 +56,7 @@ public class CountersEnrichProcessor implements ProcessorSupplier<String, Output
         String product = record.value().getProduct();
         Integer totalNumber = record.value().getTotalNumber();
         Integer totalCount = record.value().getTotalCount();
-        Long timestampLong = record.value().getTimestampLong();
+        Long timestampLong = record.value().getEndOfProcessingTimestampLong();
         Long minimumSparkIngestionTimestampLong =
             record.value().getMinimumSparkIngestionTimestampLong();
         Long minimumKafkaIngestionTimestampLong =

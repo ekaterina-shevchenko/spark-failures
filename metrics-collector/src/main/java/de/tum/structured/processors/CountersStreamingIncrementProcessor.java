@@ -29,10 +29,12 @@ public class CountersStreamingIncrementProcessor implements ProcessorSupplier<St
   public Processor<String, Purchase, Void, Void> get() {
     return new Processor<String, Purchase, Void, Void>() {
       AtomicLong lastTimestamp = new AtomicLong();
+      ProcessorContext<Void, Void> context;
 
       @Override
       public void init(ProcessorContext<Void, Void> context) {
         Processor.super.init(context);
+        this.context = context;
         context.schedule(
             Duration.ofMillis(1000),
             PunctuationType.WALL_CLOCK_TIME,
@@ -47,25 +49,27 @@ public class CountersStreamingIncrementProcessor implements ProcessorSupplier<St
                   }
                 }
               }
-            }
-        );
+            });
       }
 
       @Override
       public void process(Record<String, Purchase> record) {
+        long offset = context.recordMetadata().get().offset();
         Application.purchases.incrementAndGet();
         lastTimestamp.set(System.currentTimeMillis());
         String product = record.value().getProduct();
-        long kafkaIngestionTime = record.timestamp();
         boolean good = false;
         for (StreamingOutput timeRange : Application.streamingCounters.keySet()) {
-          long from = timeRange.getMinWindowKafkaTime();
-          long to = timeRange.getMaxWindowKafkaTime();
-          if (from <= kafkaIngestionTime && to >= kafkaIngestionTime && timeRange.getProduct().equals(product)) {
+          long from = timeRange.getMinWindowOffset();
+          long to = timeRange.getMaxWindowOffset();
+          if (from <= offset && to >= offset && timeRange.getProduct().equals(product)) {
             Application.streamingCounters.get(timeRange).incrementAndGet();
             good = true;
             break;
           }
+        }
+        if (!good) {
+          System.out.println("WE GOT SOMETHING BAD HERE: NO MATCH IN OUTPUT");
         }
       }
     };

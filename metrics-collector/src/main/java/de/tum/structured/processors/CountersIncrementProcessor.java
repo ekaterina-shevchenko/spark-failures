@@ -28,7 +28,7 @@ public class CountersIncrementProcessor implements ProcessorSupplier<String, Pur
   @Override
   public Processor<String, Purchase, Void, Void> get() {
     return new Processor<String, Purchase, Void, Void>() {
-      AtomicLong lastTimestamp = new AtomicLong();
+      AtomicLong lastTimestamp = new AtomicLong(System.currentTimeMillis());
 
       @Override
       public void init(ProcessorContext<Void, Void> context) {

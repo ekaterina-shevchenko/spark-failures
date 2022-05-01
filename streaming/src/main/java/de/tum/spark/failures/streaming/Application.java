@@ -60,7 +60,9 @@ public class Application {
                                 record.timestamp(),
                                 record.timestamp(),
                                 l,
-                                l);
+                                l,
+                                    record.offset(),
+                                    record.offset());
                         return new Tuple2<>(record.key(), o);
                       })
                   .reduceByKey(
@@ -71,7 +73,9 @@ public class Application {
                               Long.min(o1.minKafkaTime, o2.minKafkaTime),
                               Long.max(o1.maxKafkaTime, o2.maxKafkaTime),
                               Long.min(o1.minSparkTime, o2.minSparkTime),
-                              Long.max(o1.maxSparkTime, o2.maxSparkTime)))
+                              Long.max(o1.maxSparkTime, o2.maxSparkTime),
+                                  Long.min(o1.minOffset, o2.minOffset),
+                                  Long.max(o1.maxOffset, o2.maxOffset)))
                   .foreachRDD(
                       rdd -> {
                         rdd.foreachPartition(
@@ -88,6 +92,9 @@ public class Application {
                                 message.put("maxWindowSparkTime", output.maxSparkTime);
                                 message.put("totalNumber", output.totalNumber);
                                 message.put("totalCount", output.totalCount);
+                                message.put("endOfProcessingTimestamp", System.currentTimeMillis());
+                                message.put("minWindowOffset", output.minOffset);
+                                message.put("maxWindowOffset", output.maxOffset);
                                 String valueAsString =
                                     ObjectMapperFactory.getObjectMapper()
                                         .writeValueAsString(message);
@@ -115,5 +122,7 @@ public class Application {
     private Long maxKafkaTime;
     private Long minSparkTime;
     private Long maxSparkTime;
+    private Long minOffset;
+    private Long maxOffset;
   }
 }

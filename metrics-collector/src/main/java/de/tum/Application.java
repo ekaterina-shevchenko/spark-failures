@@ -66,8 +66,60 @@ public class Application {
     Topology topology = buildPurchasesTopology(streamStopCommand);
     KafkaStreams ks = new KafkaStreams(topology, buildProperties());
     streamStopCommand.kafkaStreams = ks;
-    streamStopCommand.nextStep = Application::pushMetrics;
+    if (structured) {
+      streamStopCommand.nextStep = Application::pushMetrics;
+    } else {
+      streamStopCommand.nextStep = Application::pushMetricsStreaming;
+    }
     ks.start();
+  }
+
+  private static void pushMetricsStreaming() {
+    String jdbcUrl = System.getProperty("jdbcUrl");
+    try (Connection con = DriverManager.getConnection(
+            jdbcUrl == null? "jdbc:mysql://localhost:3306/spark": jdbcUrl,
+            "spark",
+            "spark"
+    )) {
+      con.setAutoCommit(false);
+      List<StreamingOutput> series = Application.streamingCounters.entrySet().stream()
+              .map(Entry::getKey)
+              .sorted(Comparator.comparingLong(e -> e.getMinWindowSparkTime()))
+              .collect(Collectors.toList());
+      for (Entry<StreamingOutput, AtomicLong> entry : Application.streamingCounters.entrySet()) {
+        StreamingOutput key = entry.getKey();
+        writeToDbValidate(con, entry.getValue().get(), key.getTotalCount(), key.getMinWindowSparkTime());
+      }
+      for (StreamingOutput windowOutput : series) {
+        long l = (windowOutput.getEndOfProcessingTimestamp() - windowOutput.getMinWindowSparkTime()) / 1000;
+        windowOutput.setAvgTotalNumberPerSecond(windowOutput.getTotalCount() / l);
+      }
+      // 162138435000:1456, 162138436000:1456,
+      Map<Long, AtomicLong> throughput = new HashMap<>();
+      for (StreamingOutput windowOutput : series) {
+        long outputTimestamp = windowOutput.getEndOfProcessingTimestamp();
+        long minSparkIngestionTimestamp = windowOutput.getMinWindowSparkTime();
+        for (long i = minSparkIngestionTimestamp / 1000; i < outputTimestamp / 1000; i++) {
+          throughput.putIfAbsent(i, new AtomicLong());
+          throughput.get(i).addAndGet(windowOutput.getAvgTotalNumberPerSecond());
+        }
+      }
+      for (Entry<Long, AtomicLong> longAtomicLongEntry : throughput.entrySet()) {
+        writeToDbThroughput(
+                con,
+                longAtomicLongEntry.getKey(),
+                longAtomicLongEntry.getValue().get()
+        );
+      }
+      for (StreamingOutput windowOutput : series) {
+        long endToEndLatency = windowOutput.getKafkaTimestamp() - windowOutput.getMinWindowKafkaTime();
+        long processingLatency = windowOutput.getKafkaTimestamp() - windowOutput.getMinWindowSparkTime();
+        writeToDbLatency(con, windowOutput.getMinWindowKafkaTime(), endToEndLatency, processingLatency);
+      }
+      con.commit();
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
   }
 
   private static void pushMetrics() {
@@ -88,8 +140,7 @@ public class Application {
       long from = sortedCounterEntries.get(0).getKey().from;
       int totalCount = 0;
       int counted = 0;
-      for (int i = 1; i < sortedCounterEntries.size(); i++) {
-        if (from == sortedCounterEntries.get(i).getKey().from) {
+      for (int i = 1; i < sortedCounterEntries.size(); i++) { if (from == sortedCounterEntries.get(i).getKey().from) {
           totalCount += sortedCounterEntries.get(i).getKey().totalCount;
           counted += sortedCounterEntries.get(i).getValue().get();
         } else {
@@ -101,6 +152,7 @@ public class Application {
       }
       writeToDbValidate(con, counted, totalCount, from);
       for (TimeRange timeRange : series) {
+        // 10000 / 3 seconds = throughput 3333 records/sec
         long l = (timeRange.outputTimestamp - timeRange.minSparkIngestionTimestamp) / 1000;
         timeRange.avgTotalNumberPerSecond = timeRange.totalCount / l;
       }
@@ -115,15 +167,11 @@ public class Application {
         }
       }
       for (Entry<Long, AtomicLong> longAtomicLongEntry : throughput.entrySet()) {
-        writeToDbThroughput(
-            con,
-            longAtomicLongEntry.getKey(),
-            longAtomicLongEntry.getValue().get()
-        );
+        writeToDbThroughput(con, longAtomicLongEntry.getKey(), longAtomicLongEntry.getValue().get());
       }
       for (TimeRange timeRange : series) {
-        long endToEndLatency = timeRange.outputTimestamp - timeRange.minKafkaIngestionTimestamp;
-        long processingLatency = timeRange.outputTimestamp - timeRange.minSparkIngestionTimestamp;
+        long endToEndLatency = timeRange.kafkaTimestamp - timeRange.minKafkaIngestionTimestamp;
+        long processingLatency = timeRange.kafkaTimestamp - timeRange.minSparkIngestionTimestamp;
         writeToDbLatency(con, timeRange.minKafkaIngestionTimestamp, endToEndLatency, processingLatency);
       }
       con.commit();
@@ -136,8 +184,8 @@ public class Application {
           throws SQLException {
     Statement statement = connection.createStatement();
     String st = MessageFormat.format(
-            "insert into spark_structured_streaming_validate(purchases_number, output_number, timestamp, job, fault, test_number)" +
-                    " value ({0},{1},from_unixtime({2}),{3},{4},{5})",
+            "insert into spark_validate(purchases_number, output_number, timestamp, job, fault, test_number)" +
+                    " value ({0},{1},from_unixtime({2}),\"{3}\",\"{4}\",{5})",
             String.valueOf(purchasesCount),
             String.valueOf(totalCount),
             String.valueOf(timestamp / 1000),
@@ -150,12 +198,15 @@ public class Application {
   private static void writeToDbThroughput(Connection connection, long timestamp, long throughput)
       throws SQLException {
     Statement statement = connection.createStatement();
-    String st = MessageFormat.format(
-        "insert into spark_structured_streaming_throughput(throughput, timestamp, job, fault, test_number)" +
-        " value ({0},from_unixtime({1}),{2},{3},{4})",
-        String.valueOf(throughput), String.valueOf(timestamp),
-            structured? "structured-streaming": "streaming", fault, String.valueOf(testNumber)
-    );
+    String st =
+        MessageFormat.format(
+            "insert into spark_throughput(throughput, timestamp, job, fault, test_number)"
+                + " value ({0},from_unixtime({1}),\"{2}\",\"{3}\",{4})",
+            String.valueOf(throughput),
+            String.valueOf(timestamp),
+            structured ? "structured-streaming" : "streaming",
+            fault,
+            String.valueOf(testNumber));
     statement.execute(st);
     statement.close();
   }
@@ -165,13 +216,17 @@ public class Application {
                                        long endToEndLatency,
                                        long processingLatency) throws SQLException {
     Statement statement = connection.createStatement();
-    String st = MessageFormat.format(
-        "insert into spark_structured_streaming_latency(end_to_end_latency, " +
-        "processing_latency, output_timestamp, job, fault, test_number)" +
-        " value ({0},{1},from_unixtime({2}),{3},{4},{5})",
-        String.valueOf(endToEndLatency), String.valueOf(processingLatency), String.valueOf(timestamp / 1000),
-            structured? "structured-streaming": "streaming", fault, String.valueOf(testNumber)
-    );
+    String st =
+        MessageFormat.format(
+            "insert into spark_latency(end_to_end_latency, "
+                + "processing_latency, output_timestamp, job, fault, test_number)"
+                + " value ({0},{1},from_unixtime({2}),\"{3}\",\"{4}\",{5})",
+            String.valueOf(endToEndLatency),
+            String.valueOf(processingLatency),
+            String.valueOf(timestamp / 1000),
+            structured ? "structured-streaming" : "streaming",
+            fault,
+            String.valueOf(testNumber));
     statement.execute(st);
     statement.close();
   }

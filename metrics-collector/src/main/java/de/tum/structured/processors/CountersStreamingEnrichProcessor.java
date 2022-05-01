@@ -53,6 +53,7 @@ public class CountersStreamingEnrichProcessor implements ProcessorSupplier<Strin
         long timestamp = record.timestamp();
         lastTimestamp.set(System.currentTimeMillis());
         StreamingOutput value = record.value();
+        value.setKafkaTimestamp(timestamp);
         Application.streamingCounters.putIfAbsent(value, new AtomicLong());
       }
     };

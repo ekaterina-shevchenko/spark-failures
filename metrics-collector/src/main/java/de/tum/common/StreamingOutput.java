@@ -13,5 +13,10 @@ public class StreamingOutput {
   private Long maxWindowKafkaTime;
   private Long minWindowSparkTime;
   private Long maxWindowSparkTime;
+  private Long endOfProcessingTimestamp;
+  private Long kafkaTimestamp;
+  private Long avgTotalNumberPerSecond;
+  private Long minWindowOffset;
+  private Long maxWindowOffset;
 
 }

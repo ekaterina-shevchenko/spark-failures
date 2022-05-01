@@ -48,7 +48,7 @@ public class Application {
         Worker<PurchaseGenerator> worker2 = new Worker<>(GeneratorConfig.TOPIC_PURCHASES, purchaseGenerator, kafkaProducer);
 
         Thread thread = new Thread(worker2);
-        Thread.sleep(60000); // Gives time to spark to initialize and start job execution
+        Thread.sleep(180000); // Gives time to spark to initialize and start job execution
         thread.start();
         thread.join();
         kafkaProducer.flush();

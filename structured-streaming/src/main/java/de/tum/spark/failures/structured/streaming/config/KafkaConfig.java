@@ -28,6 +28,10 @@ public class KafkaConfig {
     private static AdminClient initKafkaAdmin() {
         Map<String, Object> props = new HashMap<>();
         props.put("bootstrap.servers", BOOTSTRAP_KAFKA_SERVER);
+        props.put("batch.size", 8192);
+        props.put("buffer.memory", 16384);
+        props.put("kafka.batch.size", 8192);
+        props.put("kafka.buffer.memory", 16384);
         return KafkaAdminClient.create(props);
     }
 

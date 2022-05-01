@@ -4,7 +4,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
 public class Output {
-  static SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss.SSS'Z'");
+  static SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'+02:00'");
   private String product;
   private Integer totalCount;
   private Integer totalNumber;
@@ -12,8 +12,13 @@ public class Output {
   private String windowEnd;
   private Long windowStartLong;
   private Long windowEndLong;
-  private Long timestampLong;
-  private String timestamp;
+  private Long endOfProcessingTimestampLong;
+  private String endOfProcessingTimestamp;
+
+  public Long getEndOfProcessingTimestampLong() {
+    return endOfProcessingTimestampLong;
+  }
+
   private Long minimumSparkIngestionTimestampLong;
   private String minimumSparkIngestionTimestamp;
   private Long minimumKafkaIngestionTimestampLong;
@@ -27,14 +32,6 @@ public class Output {
     this.totalNumber = number;
     this.windowStartLong = windowStart;
     this.windowEndLong = windowEnd;
-  }
-
-  public Long getTimestampLong() {
-    return timestampLong;
-  }
-
-  public void setTimestampLong(Long timestampLong) {
-    this.timestampLong = timestampLong;
   }
 
   public String getProduct() {
@@ -61,6 +58,15 @@ public class Output {
     return minimumKafkaIngestionTimestampLong;
   }
 
+
+  public void setEndOfProcessingTimestamp(String endOfProcessingTimestamp) {
+    try {
+      this.endOfProcessingTimestampLong = simpleDateFormat.parse(endOfProcessingTimestamp).getTime();
+    } catch (ParseException e) {
+      e.printStackTrace();
+    }
+  }
+
   public void setMinimumKafkaIngestionTimestampLong(Long minimumKafkaIngestionTimestampLong) {
     this.minimumKafkaIngestionTimestampLong = minimumKafkaIngestionTimestampLong;
   }
@@ -85,14 +91,6 @@ public class Output {
     this.totalCount = totalCount;
   }
 
-  public void setTimestamp(String timestamp) {
-    this.timestamp = timestamp;
-    try {
-      this.timestampLong = simpleDateFormat.parse(timestamp).getTime();
-    } catch (ParseException e) {
-      e.printStackTrace();
-    }
-  }
 
   public void setMinimumSparkIngestionTimestamp(String minimumSparkIngestionTimestamp) {
     this.minimumSparkIngestionTimestamp = minimumSparkIngestionTimestamp;

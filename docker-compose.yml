@@ -3,8 +3,14 @@ version: "3"
 services:
 
   metrics-collector:
-    image: "metrics-collector:latest"
+    build:
+      context: .
+      dockerfile: metrics-collector/Dockerfile
     container_name: metrics-collector
+    environment:
+      - MODE=structured
+      - FAULT=packet_loss
+      - TEST_NUMBER=2
     deploy:
       placement:
         constraints:
@@ -12,15 +18,13 @@ services:
     networks:
       - spark-network
     depends_on:
-      - generator
       - mariadb
 
   mariadb:
+    build:
+      context: configs/db
     container_name: spark-mariadb
-    image: mariadb:10.4
     command: --character-set-server=utf8 --lower_case_table_names
-    volumes:
-      - ./logs/db/init.sql:/docker-entrypoint-initdb.d/1.sql
     ports:
       - "3306:3306"
     environment:
@@ -28,18 +32,21 @@ services:
       - MYSQL_DATABASE=spark
       - MYSQL_USER=spark
       - MYSQL_PASSWORD=spark
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role==manager
     networks:
       - spark-network
 
   spark-master:
-    image: "bitnami/spark:3.2.0"
+    build:
+      context: configs/spark
     container_name: spark_master
     ports:
       - "8080:8080"
     environment:
       - SPARK_MODE=master # default
-    volumes:
-      - ./logs/spark/metrics.properties:/opt/bitnami/spark/conf/metrics.properties
     deploy:
       placement:
         constraints:
@@ -48,61 +55,58 @@ services:
       - spark-network
 
   spark-worker-1:
-    image: "bitnami/spark:3.2.0"
+    build:
+      context: configs/spark
     container_name: spark_worker_1
     ports:
       - "8081:8081"
     environment:
       - SPARK_MODE=worker
-      - SPARK_WORKER_CORES=2
-      - SPARK_WORKER_MEMORY=3G
-    volumes:
-      - ./logs/spark/metrics.properties:/opt/bitnami/spark/conf/metrics.properties
+      - SPARK_WORKER_CORES=6
+      - SPARK_WORKER_MEMORY=10G
     deploy:
       placement:
         constraints:
-          - node.labels.role==worker
+          - node.labels.role==worker-1
       replicas: 1
     networks:
       - spark-network
 
   spark-worker-2:
-    image: "bitnami/spark:3.2.0"
+    build:
+      context: configs/spark
     container_name: spark_worker_2
     ports:
-      - "8082:8082"
+      - "8082:8081"
     environment:
       - SPARK_MODE=worker
-      - SPARK_WORKER_CORES=2
-      - SPARK_WORKER_MEMORY=3G
-    volumes:
-      - ./logs/spark/metrics.properties:/opt/bitnami/spark/conf/metrics.properties
+      - SPARK_WORKER_CORES=6
+      - SPARK_WORKER_MEMORY=10G
     deploy:
       placement:
         constraints:
-          - node.labels.role==worker
+          - node.labels.role==worker-2
       replicas: 1
     networks:
       - spark-network
 
-  spark-worker-3:
-    image: "bitnami/spark:3.2.0"
-    container_name: spark_worker_3
-    ports:
-      - "8083:8083"
-    environment:
-      - SPARK_MODE=worker
-      - SPARK_WORKER_CORES=2
-      - SPARK_WORKER_MEMORY=3G
-    volumes:
-      - ./logs/spark/metrics.properties:/opt/bitnami/spark/conf/metrics.properties
-    deploy:
-      placement:
-        constraints:
-          - node.labels.role==worker
-      replicas: 1
-    networks:
-      - spark-network
+  #spark-worker-3:
+  #  build:
+  #    context: configs/spark
+  #  container_name: spark_worker_3
+  #  ports:
+  #    - "8083:8081"
+  #  environment:
+  #    - SPARK_MODE=worker
+  #    - SPARK_WORKER_CORES=6
+  #    - SPARK_WORKER_MEMORY=10G
+  #  deploy:
+  #    placement:
+  #      constraints:
+  #        - node.labels.role==worker-3
+  #    replicas: 1
+  #  networks:
+  #    - spark-network
 
   driver:
     image: "driver:latest"
@@ -113,20 +117,23 @@ services:
     deploy:
       placement:
         constraints:
-          - node.labels.role==manager
+          - node.labels.role==master
     networks:
       - spark-network
-    volumes:
-      - ./logs/spark/metrics.properties:/opt/bitnami/spark/conf/metrics.properties
-      - ./logs/checkpoint:/opt/bitnami/checkpoint # structured streaming will save checkpoints in this location
     depends_on:
       - spark-master
       - spark-worker-1
       - spark-worker-2
-      - spark-worker-3
       - kafka
+    environment:
+      - TZ=Europe/Berlin
+      - AWS_ACCESS_KEY_ID=AKIA32DZ4YNVPL4KEXI5
+      - AWS_SECRET_ACCESS_KEY=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
+
   generator:
-    image: "generator:latest"
+    build:
+      context: .
+      dockerfile: generator/Dockerfile
     container_name: generator
     ports:
       - "8091:8080"
@@ -145,8 +152,8 @@ services:
     image: "gremlin/gremlin:latest"
     container_name: gremlin-driver
     environment:
-    - GREMLIN_TEAM_ID=c2dce29f-7bcb-4e50-9ce2-9f7bcb6e50d0
-    - GREMLIN_TEAM_SECRET=fe591163-4064-4675-9911-634064e67530
+    - GREMLIN_TEAM_ID=8882f35b-8baa-4265-82f3-5b8baa82659b
+    - GREMLIN_TEAM_SECRET=6e06d523-16ec-4c00-86d5-2316ecec00f0
     tty: true
     deploy:
       placement:
@@ -169,40 +176,42 @@ services:
       - KAFKA_ADVERTISED_LISTENERS=HOST_INTERNAL://localhost:29092, DOCKER_INTERNAL://kafka:9092
       - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=HOST_INTERNAL:PLAINTEXT, DOCKER_INTERNAL:PLAINTEXT
       - KAFKA_INTER_BROKER_LISTENER_NAME=DOCKER_INTERNAL
-#      - KAFKA_OPTS=-javaagent:/usr/app/jmx_prometheus_javaagent.jar=7071:/usr/app/prom-jmx-agent-config.yml
     deploy:
       placement:
         constraints:
           - node.labels.role==manager
     networks:
       - spark-network
-#    volumes:
-#      - ./logs/jmx/jmx_prometheus_javaagent-0.16.1.jar:/usr/app/jmx_prometheus_javaagent.jar
-#      - ./logs/kafka/prom-jmx-agent-config.yml:/usr/app/prom-jmx-agent-config.yml
-#      - ./logs/kafka:/kafka # Keep this volume if you don't want to run into device-out-of-memory error. Otherwise you would need either to delete Kafka topic's data via Producer API call, or navigate to docker's /var/lib/docker/volumes/ and do it manually (instructions: https://stackoverflow.com/questions/38532483/where-is-var-lib-docker-on-mac-os-x)
     depends_on:
       - zookeeper
 
   grafana:
-    image: "preconfigured-grafana:latest"
+    build:
+      context: configs/grafana
     container_name: spark_grafana
     volumes:
-      - ./logs/grafana/data:/opt/bitnami/grafana/data
+      - ./configs/grafana/data:/opt/bitnami/grafana/data
     ports:
       - "3000:3000"
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role==manager
     networks:
       - spark-network
 
   prometheus:
-    image: bitnami/prometheus
+    build:
+      context: configs/prometheus
     container_name: prometheus
-    volumes:
-      - ./logs/prometheus/conf:/opt/bitnami/prometheus/conf
-      - ./logs/prometheus/data:/opt/bitnami/prometheus/data
     ports:
       - "9090:9090"
     depends_on:
       - kafka
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role==manager
     networks:
       - spark-network
 
@@ -221,20 +230,14 @@ services:
     networks:
       - spark-network
 
-  #gremlin:
-  #  image: "gremlin/gremlin:latest"
-  #  container_name: gremlin
-  #  ports:
-  #    - ":"
-  #  environment:
-  #    - GREMLIN_TEAM_ID=8882f35b-8baa-4265-82f3-5b8baa82659b
-  #    - GREMLIN_TEAM_SECRET=6e06d523-16ec-4c00-86d5-2316ecec00f0
-  #  deploy:
-  #    placement:
-  #      constraints:
-  #        - node.labels.role==manager
-  #  networks:
-  #    - spark-network
+  node-exporter-1:
+    image: bitnami/node-exporter
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role==master
+    ports:
+      - "9100:9100"
 
 networks:
   spark-network:
