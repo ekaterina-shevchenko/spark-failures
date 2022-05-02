@@ -20,14 +20,12 @@ public class GeneratorConfig {
     public static final Integer THROUGHPUT;
     public static final String TOPIC_PURCHASES;
     public static final String TOPIC_OUTPUT;
-    public static final String TOPIC_ADS;
     public static final String BOOTSTRAP_KAFKA_SERVER;
 
     static {
         THROUGHPUT = getOrDefault(THROUGHPUT_PROPERTY, DEFAULT_THROUGHPUT);
         TOPIC_PURCHASES = getOrDefault(TOPIC_PURCHASES_PROPERTY, DEFAULT_TOPIC_PURCHASES);
         TOPIC_OUTPUT = getOrDefault(TOPIC_OUTPUT_PROPERTY, DEFAULT_TOPIC_OUTPUT);
-        TOPIC_ADS = getOrDefault(TOPIC_ADS_PROPERTY, DEFAULT_TOPIC_ADS);
         BOOTSTRAP_KAFKA_SERVER = getOrDefault(BOOTSTRAP_KAFKA_SERVER_PROPERTY, DEFAULT_BOOTSTRAP_KAFKA_SERVER);
     }
 

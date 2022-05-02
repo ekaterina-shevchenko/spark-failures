@@ -18,4 +18,4 @@ RUN mvn -f /home/app/pom.xml -pl '!streaming,!structured-streaming' install
 FROM openjdk:11-jre-slim
 COPY --from=build /home/app/generator/target/generator-fat-1.0.jar /usr/local/lib/generator.jar
 EXPOSE 8080
-CMD java -Dbootstrap.kafka.server=$BOOTSTRAP_KAFKA_SERVER -jar /usr/local/lib/generator.jar
+CMD java -Dbootstrap.kafka.server=$BOOTSTRAP_KAFKA_SERVER -Dthroughput=$THROUGHPUT -jar /usr/local/lib/generator.jar

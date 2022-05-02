@@ -1,2 +1,2 @@
 FROM bitnami/prometheus
-COPY conf /opt/bitnami/prometheus/conf
+COPY configs/prometheus/conf /opt/bitnami/prometheus/conf

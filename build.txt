@@ -1,0 +1,6 @@
+docker build -f metrics-collector/Dockerfile -t metrics-collector .
+docker build -f configs/db/Dockerfile -t maria-initialized .
+docker build -f configs/spark/Dockerfile -t spark-with-metrics .
+docker build -f generator/Dockerfile -t generator .
+docker build -f configs/grafana/Dockerfile -t grafana-dashboards .
+docker build -f configs/prometheus/Dockerfile -t prometheus-configs .

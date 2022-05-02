@@ -3,9 +3,7 @@ version: "3"
 services:
 
   metrics-collector:
-    build:
-      context: .
-      dockerfile: metrics-collector/Dockerfile
+    image: "metrics-collector:latest"
     container_name: metrics-collector
     environment:
       - MODE=streaming
@@ -21,8 +19,7 @@ services:
       - mariadb
 
   mariadb:
-    build:
-      context: configs/db
+    image: "maria-initialized:latest"
     container_name: spark-mariadb
     command: --character-set-server=utf8 --lower_case_table_names
     ports:
@@ -40,8 +37,7 @@ services:
       - spark-network
 
   spark-master:
-    build:
-      context: configs/spark
+    image: "spark-with-metrics:latest"
     container_name: spark_master
     ports:
       - "8080:8080"
@@ -55,8 +51,7 @@ services:
       - spark-network
 
   spark-worker-1:
-    build:
-      context: configs/spark
+    image: "spark-with-metrics:latest"
     container_name: spark_worker_1
     ports:
       - "8081:8081"
@@ -73,8 +68,7 @@ services:
       - spark-network
 
   spark-worker-2:
-    build:
-      context: configs/spark
+    image: "spark-with-metrics:latest"
     container_name: spark_worker_2
     ports:
       - "8082:8081"
@@ -91,8 +85,7 @@ services:
       - spark-network
 
   spark-worker-3:
-    build:
-      context: configs/spark
+    image: "spark-with-metrics:latest"
     container_name: spark_worker_3
     ports:
       - "8083:8081"
@@ -131,14 +124,13 @@ services:
       - AWS_SECRET_ACCESS_KEY=secret_access_key
 
   generator:
-    build:
-      context: .
-      dockerfile: generator/Dockerfile
+    image: "generator:latest"
     container_name: generator
     ports:
       - "8091:8080"
     environment:
       - BOOTSTRAP_KAFKA_SERVER=kafka_1:9092
+      - THROUGHPUT=25000
     deploy:
       placement:
         constraints:
@@ -232,11 +224,8 @@ services:
       - zookeeper
 
   grafana:
-    build:
-      context: configs/grafana
+    image: "grafana-dashboards:latest"
     container_name: spark_grafana
-    volumes:
-      - ./configs/grafana/data:/opt/bitnami/grafana/data
     ports:
       - "3000:3000"
     deploy:
@@ -247,8 +236,7 @@ services:
       - spark-network
 
   prometheus:
-    build:
-      context: configs/prometheus
+    image: "prometheus-configs:latest"
     container_name: prometheus
     ports:
       - "9090:9090"
@@ -266,7 +254,6 @@ services:
     container_name: zookeeper
     ports:
       - "2181:2181"
-    restart: always # Since the Zookeeper "fails fast" it's better to always restart it
     environment:
       - ZOO_LOG4J_PROP="INFO,ROLLINGFILE" # Redirects logging to /logs/zookeeper.log, the image already has a volume in /logs
     deploy:
@@ -276,42 +263,42 @@ services:
     networks:
       - spark-network
 
-  node-exporter-1:
-    image: bitnami/node-exporter
-    deploy:
-      placement:
-        constraints:
-          - node.labels.role==master
-    ports:
-      - "9100:9100"
-
-  node-exporter-2:
-    image: bitnami/node-exporter
-    deploy:
-      placement:
-        constraints:
-          - node.labels.role==worker-1
-    ports:
-      - "9101:9100"
-
-  node-exporter-3:
-    image: bitnami/node-exporter
-    deploy:
-      placement:
-        constraints:
-          - node.labels.role==worker-2
-    ports:
-      - "9102:9100"
-
-  node-exporter-4:
-    image: bitnami/node-exporter
-    deploy:
-      placement:
-        constraints:
-          - node.labels.role==worker-3
-    ports:
-      - "9103:9100"
+  #node-exporter-1:
+  #  image: bitnami/node-exporter
+  #  deploy:
+  #    placement:
+  #      constraints:
+  #        - node.labels.role==master
+  #  ports:
+  #    - "9100:9100"
+#
+  #node-exporter-2:
+  #  image: bitnami/node-exporter
+  #  deploy:
+  #    placement:
+  #      constraints:
+  #        - node.labels.role==worker-1
+  #  ports:
+  #    - "9101:9100"
+#
+  #node-exporter-3:
+  #  image: bitnami/node-exporter
+  #  deploy:
+  #    placement:
+  #      constraints:
+  #        - node.labels.role==worker-2
+  #  ports:
+  #    - "9102:9100"
+#
+  #node-exporter-4:
+  #  image: bitnami/node-exporter
+  #  deploy:
+  #    placement:
+  #      constraints:
+  #        - node.labels.role==worker-3
+  #  ports:
+  #    - "9103:9100"
 
 networks:
   spark-network:
-    driver: bridge
+    driver: overlay
