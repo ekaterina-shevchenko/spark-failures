@@ -91,8 +91,16 @@ public class Application {
         writeToDbValidate(con, entry.getValue().get(), key.getTotalCount(), key.getMinWindowSparkTime());
       }
       for (StreamingOutput windowOutput : series) {
-        long l = (windowOutput.getEndOfProcessingTimestamp() - windowOutput.getMinWindowSparkTime()) / 1000;
-        windowOutput.setAvgTotalNumberPerSecond(windowOutput.getTotalCount() / l);
+        long dif = windowOutput.getEndOfProcessingTimestamp() - windowOutput.getMinWindowSparkTime();
+        long d = dif / 1000;
+        long mod = dif % 1000;
+        if (mod > 650 && d != 0) {
+          d++;
+        }
+        if (d == 0) {
+          d = 1;
+        }
+        windowOutput.setAvgTotalNumberPerSecond(windowOutput.getTotalCount() / d);
       }
       // 162138435000:1456, 162138436000:1456,
       Map<Long, AtomicLong> throughput = new HashMap<>();
@@ -140,7 +148,8 @@ public class Application {
       long from = sortedCounterEntries.get(0).getKey().from;
       int totalCount = 0;
       int counted = 0;
-      for (int i = 1; i < sortedCounterEntries.size(); i++) { if (from == sortedCounterEntries.get(i).getKey().from) {
+      for (int i = 1; i < sortedCounterEntries.size(); i++) {
+        if (from == sortedCounterEntries.get(i).getKey().from) {
           totalCount += sortedCounterEntries.get(i).getKey().totalCount;
           counted += sortedCounterEntries.get(i).getValue().get();
         } else {
@@ -153,6 +162,15 @@ public class Application {
       writeToDbValidate(con, counted, totalCount, from);
       for (TimeRange timeRange : series) {
         // 10000 / 3 seconds = throughput 3333 records/sec
+        long dif = (timeRange.outputTimestamp - timeRange.minSparkIngestionTimestamp);
+        long d = dif / 1000;
+        long mod = dif % 1000;
+        if (mod > 600 && d != 0) {
+          d++;
+        }
+        if (d == 0) {
+          d = 1;
+        }
         long l = (timeRange.outputTimestamp - timeRange.minSparkIngestionTimestamp) / 1000;
         timeRange.avgTotalNumberPerSecond = timeRange.totalCount / l;
       }
