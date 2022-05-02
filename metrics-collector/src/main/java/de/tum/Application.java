@@ -165,7 +165,7 @@ public class Application {
         long dif = (timeRange.outputTimestamp - timeRange.minSparkIngestionTimestamp);
         long d = dif / 1000;
         long mod = dif % 1000;
-        if (mod > 600 && d != 0) {
+        if (mod > 650 && d != 0) {
           d++;
         }
         if (d == 0) {
