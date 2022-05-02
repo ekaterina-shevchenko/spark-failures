@@ -23,6 +23,7 @@ public class Application {
     SparkSession session = SparkSession
         .builder()
         .appName("structured-streaming-app-purchase-count")
+        .config("spark.sql.streaming.metricsEnabled", true)
         .getOrCreate();
     Dataset<Row> dataframe = initInputStream(session);
     Dataset<Row> rowDataset = dataframe
@@ -56,10 +57,12 @@ public class Application {
         .format("kafka")
         .option("kafka.bootstrap.servers", KafkaConfig.BOOTSTRAP_KAFKA_SERVER)
         .option("subscribe", KafkaConfig.TOPIC_PURCHASES)
+        .option("minOffsetsPerTrigger", 1_000)
         .option("maxOffsetsPerTrigger", 1_000_000)
+        .option("maxTriggerDelay", "30s")
         .option("kafkaConsumer.pollTimeoutMs", 60_000)
         .option("failOnDataLoss", false)
-        //.option("startingOffsets","earliest")
+        .option("startingOffsets","earliest")
         .load();
   }
 
@@ -71,11 +74,7 @@ public class Application {
         .option("topic", KafkaConfig.TOPIC_OUTPUT)
         .option("acks","all") // TODO: does this even work?
         .option("kafka.acks","all") // TODO: does this even work?
-        .option("max.in.flight.requests.per.connection", 1) // TODO: does this even work?
-        .option("kafka.max.in.flight.requests.per.connection", 1) // TODO: does this even work?
         .option("checkpointLocation", "s3a://spark-failures-checkpoints/checkpoints")
-        .option("kafka.batch.size", 8192)
-        .option("kafka.buffer.memory", 16384)
         .trigger(Trigger.ProcessingTime("10 seconds"))
         .outputMode(OutputMode.Append())
         .start();

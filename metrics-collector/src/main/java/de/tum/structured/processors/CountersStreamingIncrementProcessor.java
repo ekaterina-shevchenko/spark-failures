@@ -40,7 +40,7 @@ public class CountersStreamingIncrementProcessor implements ProcessorSupplier<St
             PunctuationType.WALL_CLOCK_TIME,
             ts -> {
               long l = lastTimestamp.get();
-              if (l != 0 && ts - l > 10000) {
+              if (l != 0 && ts - l > 15000) {
                 stoppedSet.put(this, true);
                 if (stoppedSet.size() == KAFKA_PARTITIONS) {
                   if (nextStep.compareAndSet(false, true)) {

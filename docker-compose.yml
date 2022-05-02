@@ -8,9 +8,9 @@ services:
       dockerfile: metrics-collector/Dockerfile
     container_name: metrics-collector
     environment:
-      - MODE=structured
-      - FAULT=packet_loss
-      - TEST_NUMBER=2
+      - MODE=streaming
+      - FAULT=no_fault
+      - TEST_NUMBER=1
     deploy:
       placement:
         constraints:
@@ -63,7 +63,7 @@ services:
     environment:
       - SPARK_MODE=worker
       - SPARK_WORKER_CORES=6
-      - SPARK_WORKER_MEMORY=10G
+      - SPARK_WORKER_MEMORY=12G
     deploy:
       placement:
         constraints:
@@ -81,7 +81,7 @@ services:
     environment:
       - SPARK_MODE=worker
       - SPARK_WORKER_CORES=6
-      - SPARK_WORKER_MEMORY=10G
+      - SPARK_WORKER_MEMORY=12G
     deploy:
       placement:
         constraints:
@@ -90,23 +90,23 @@ services:
     networks:
       - spark-network
 
-  #spark-worker-3:
-  #  build:
-  #    context: configs/spark
-  #  container_name: spark_worker_3
-  #  ports:
-  #    - "8083:8081"
-  #  environment:
-  #    - SPARK_MODE=worker
-  #    - SPARK_WORKER_CORES=6
-  #    - SPARK_WORKER_MEMORY=10G
-  #  deploy:
-  #    placement:
-  #      constraints:
-  #        - node.labels.role==worker-3
-  #    replicas: 1
-  #  networks:
-  #    - spark-network
+  spark-worker-3:
+    build:
+      context: configs/spark
+    container_name: spark_worker_3
+    ports:
+      - "8083:8081"
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_WORKER_CORES=6
+      - SPARK_WORKER_MEMORY=10G
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role==worker-3
+      replicas: 1
+    networks:
+      - spark-network
 
   driver:
     image: "driver:latest"
@@ -124,11 +124,11 @@ services:
       - spark-master
       - spark-worker-1
       - spark-worker-2
-      - kafka
+      - kafka_1
     environment:
       - TZ=Europe/Berlin
-      - AWS_ACCESS_KEY_ID=AKIA32DZ4YNVPL4KEXI5
-      - AWS_SECRET_ACCESS_KEY=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
+      - AWS_ACCESS_KEY_ID=access_key
+      - AWS_SECRET_ACCESS_KEY=secret_access_key
 
   generator:
     build:
@@ -138,7 +138,7 @@ services:
     ports:
       - "8091:8080"
     environment:
-      - BOOTSTRAP_KAFKA_SERVER=kafka:9092
+      - BOOTSTRAP_KAFKA_SERVER=kafka_1:9092
     deploy:
       placement:
         constraints:
@@ -162,9 +162,9 @@ services:
     networks:
       - spark-network
 
-  kafka:
+  kafka_1:
     image: "wurstmeister/kafka:latest"
-    container_name: kafka
+    container_name: kafka_1
     ports:
       - "29092:29092"
       - "7071:7071"
@@ -172,8 +172,54 @@ services:
       - KAFKA_CREATE_TOPICS="output:3:1,purchases:3:1" # topic_name:number_of_partitions_number_of_replicas
       - KAFKA_BROKER_ID=1
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-      - KAFKA_LISTENERS=HOST_INTERNAL://:29092, DOCKER_INTERNAL://kafka:9092 # Makes Kafka broker accessible in the docker overlay network (no external): https://rmoff.net/2018/08/02/kafka-listeners-explained/
-      - KAFKA_ADVERTISED_LISTENERS=HOST_INTERNAL://localhost:29092, DOCKER_INTERNAL://kafka:9092
+      - KAFKA_LISTENERS=HOST_INTERNAL://:29092, DOCKER_INTERNAL://kafka_1:9092 # Makes Kafka broker accessible in the docker overlay network (no external): https://rmoff.net/2018/08/02/kafka-listeners-explained/
+      - KAFKA_ADVERTISED_LISTENERS=HOST_INTERNAL://localhost:29092, DOCKER_INTERNAL://kafka_1:9092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=HOST_INTERNAL:PLAINTEXT, DOCKER_INTERNAL:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME=DOCKER_INTERNAL
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role==manager
+    networks:
+      - spark-network
+    depends_on:
+      - zookeeper
+
+  kafka_2:
+    image: "wurstmeister/kafka:latest"
+    container_name: kafka_2
+    ports:
+      - "29093:29092"
+      - "7073:7071"
+    environment:
+      - KAFKA_CREATE_TOPICS="output:3:1,purchases:3:1" # topic_name:number_of_partitions_number_of_replicas
+      - KAFKA_BROKER_ID=2
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_LISTENERS=HOST_INTERNAL://:29093, DOCKER_INTERNAL://kafka_2:9092 # Makes Kafka broker accessible in the docker overlay network (no external): https://rmoff.net/2018/08/02/kafka-listeners-explained/
+      - KAFKA_ADVERTISED_LISTENERS=HOST_INTERNAL://localhost:29093, DOCKER_INTERNAL://kafka_2:9092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=HOST_INTERNAL:PLAINTEXT, DOCKER_INTERNAL:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME=DOCKER_INTERNAL
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role==manager
+    networks:
+      - spark-network
+    depends_on:
+      - zookeeper
+
+  kafka_3:
+    image: "wurstmeister/kafka:latest"
+    container_name: kafka_3
+    ports:
+      - "29094:29092"
+      - "7074:7071"
+    environment:
+      - KAFKA_CREATE_TOPICS="output:3:1,purchases:3:1" # topic_name:number_of_partitions_number_of_replicas
+      - KAFKA_BROKER_ID=3
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_LISTENERS=HOST_INTERNAL://:29094, DOCKER_INTERNAL://kafka_3:9092 # Makes Kafka broker accessible in the docker overlay network (no external): https://rmoff.net/2018/08/02/kafka-listeners-explained/
+      - KAFKA_ADVERTISED_LISTENERS=HOST_INTERNAL://localhost:29094, DOCKER_INTERNAL://kafka_3:9092
       - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=HOST_INTERNAL:PLAINTEXT, DOCKER_INTERNAL:PLAINTEXT
       - KAFKA_INTER_BROKER_LISTENER_NAME=DOCKER_INTERNAL
     deploy:
@@ -207,7 +253,7 @@ services:
     ports:
       - "9090:9090"
     depends_on:
-      - kafka
+      - kafka_1
     deploy:
       placement:
         constraints:
@@ -238,6 +284,33 @@ services:
           - node.labels.role==master
     ports:
       - "9100:9100"
+
+  node-exporter-2:
+    image: bitnami/node-exporter
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role==worker-1
+    ports:
+      - "9101:9100"
+
+  node-exporter-3:
+    image: bitnami/node-exporter
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role==worker-2
+    ports:
+      - "9102:9100"
+
+  node-exporter-4:
+    image: bitnami/node-exporter
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role==worker-3
+    ports:
+      - "9103:9100"
 
 networks:
   spark-network:
