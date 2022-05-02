@@ -37,6 +37,7 @@ public class Application {
                       "streaming-app-purchase-count",
                       StreamingConfig.BATCH_DURATION);
               sc.checkpoint(checkpointDirectory);
+              sc.sparkContext().getConf().set("spark.sql.streaming.metricsEnabled", "true");
               JavaInputDStream<ConsumerRecord<String, String>> directStream =
                   KafkaUtils.createDirectStream(
                       sc,

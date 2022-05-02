@@ -17,7 +17,7 @@ public class Worker<T extends Generator<? extends Event>> implements Runnable {
     @Override
     public void run() {
         try {
-            while (counter.get() < 30_000_000L) {
+            while (counter.get() < 10_000_000L) {
                 try {
                     Event event = generator.generate();
                     ProducerRecord<String, Event> record = new ProducerRecord<>(topic, event.getKey(), event);
