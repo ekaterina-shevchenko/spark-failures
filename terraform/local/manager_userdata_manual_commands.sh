@@ -42,7 +42,7 @@ sudo docker build -f streaming/Dockerfile -t driver .
 sudo docker build -f structured-streaming/Dockerfile -t driver .
 
 # run docker-compose stack to deploy Spark workers on the attached swarm nodes
-sudo docker stack deploy --compose-file docker-compose.yml swarm-cluster
+sudo docker stack deploy --compose-file docker-compose.yml swarm-cluster --with-registry-auth
 
 # list swarm services
 sudo docker service ls

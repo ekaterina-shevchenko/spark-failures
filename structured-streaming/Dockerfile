@@ -23,7 +23,7 @@ ENV SPARK_MODE=worker
 COPY --from=build /home/app/structured-streaming/target/structured-streaming-fat-1.0.jar /usr/local/lib/structured-streaming.jar
 COPY configs/spark/metrics.properties /opt/bitnami/spark/conf/metrics.properties
 
-ENTRYPOINT ["/opt/bitnami/spark/bin/spark-submit", "--master=spark://spark-master:7077", \
+ENTRYPOINT ["/opt/bitnami/spark/bin/spark-submit", "--master=spark://swarm-cluster_spark-master:7077", \
             "--deploy-mode=client", "--driver-memory=5g", "--num-executors=6", \
             "--executor-memory=5g", "--executor-cores=3", \
             "--conf", "spark.jars.ivy=/tmp/.ivy", \

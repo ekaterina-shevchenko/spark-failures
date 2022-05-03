@@ -13,7 +13,7 @@ import java.util.Map;
 public class KafkaConfig {
 
     public static final String TOPIC_PURCHASES = "purchases";
-    public static final String BOOTSTRAP_KAFKA_SERVER = "kafka_1:9092";
+    public static final String BOOTSTRAP_KAFKA_SERVER = "swarm-cluster_kafka_1:9092";
     public static final String TOPIC_OUTPUT = "output";
 
     static {
