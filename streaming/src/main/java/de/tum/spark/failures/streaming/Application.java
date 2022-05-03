@@ -38,7 +38,6 @@ public class Application {
                       StreamingConfig.BATCH_DURATION);
               sc.checkpoint(checkpointDirectory);
               sc.sparkContext().getConf().set("spark.sql.streaming.metricsEnabled", "true");
-              sc.sparkContext().getConf().set("spark.driver.host", StreamingConfig.SPARK_DRIVER);
               JavaInputDStream<ConsumerRecord<String, String>> directStream =
                   KafkaUtils.createDirectStream(
                       sc,
