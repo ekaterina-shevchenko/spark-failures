@@ -4,7 +4,7 @@ services:
 
   metrics-collector:
     image: "metrics-collector:latest"
-    container_name: metrics-collector
+    hostname: metrics-collector
     environment:
       - MODE=streaming
       - FAULT=no_fault
@@ -20,7 +20,7 @@ services:
 
   mariadb:
     image: "maria-initialized:latest"
-    container_name: spark-mariadb
+    hostname: spark-mariadb
     command: --character-set-server=utf8 --lower_case_table_names
     ports:
       - "3306:3306"
@@ -38,7 +38,7 @@ services:
 
   spark-master:
     image: "spark-with-metrics:latest"
-    container_name: spark_master
+    hostname: spark_master
     ports:
       - "8080:8080"
     environment:
@@ -52,7 +52,7 @@ services:
 
   spark-worker-1:
     image: "spark-with-metrics:latest"
-    container_name: spark_worker_1
+    hostname: spark_worker_1
     ports:
       - "8081:8081"
     environment:
@@ -69,7 +69,7 @@ services:
 
   spark-worker-2:
     image: "spark-with-metrics:latest"
-    container_name: spark_worker_2
+    hostname: spark_worker_2
     ports:
       - "8082:8081"
     environment:
@@ -86,7 +86,7 @@ services:
 
   spark-worker-3:
     image: "spark-with-metrics:latest"
-    container_name: spark_worker_3
+    hostname: spark_worker_3
     ports:
       - "8083:8081"
     environment:
@@ -103,7 +103,7 @@ services:
 
   driver:
     image: "driver:latest"
-    container_name: spark_driver
+    hostname: spark_driver
     ports:
       - "4040:4040"
     user: root # This fixes KerberosAuthException during spark-submit: https://issueexplorer.com/issue/bitnami/bitnami-docker-spark/27
@@ -120,16 +120,16 @@ services:
       - kafka_1
     environment:
       - TZ=Europe/Berlin
-      - AWS_ACCESS_KEY_ID=access_key
+      - AWS_ACCESS_KEY_ID=access_key_id
       - AWS_SECRET_ACCESS_KEY=secret_access_key
 
   generator:
     image: "generator:latest"
-    container_name: generator
+    hostname: generator
     ports:
       - "8091:8080"
     environment:
-      - BOOTSTRAP_KAFKA_SERVER=kafka_1:9092
+      - BOOTSTRAP_KAFKA_SERVER=swarm-cluster_kafka_1:9092
       - THROUGHPUT=25000
     deploy:
       placement:
@@ -142,7 +142,7 @@ services:
 
   gremlin-driver:
     image: "gremlin/gremlin:latest"
-    container_name: gremlin-driver
+    hostname: gremlin-driver
     environment:
     - GREMLIN_TEAM_ID=8882f35b-8baa-4265-82f3-5b8baa82659b
     - GREMLIN_TEAM_SECRET=6e06d523-16ec-4c00-86d5-2316ecec00f0
@@ -156,7 +156,7 @@ services:
 
   kafka_1:
     image: "wurstmeister/kafka:latest"
-    container_name: kafka_1
+    hostname: kafka_1
     ports:
       - "29092:29092"
       - "7071:7071"
@@ -165,7 +165,7 @@ services:
       - KAFKA_BROKER_ID=1
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
       - KAFKA_LISTENERS=HOST_INTERNAL://:29092, DOCKER_INTERNAL://kafka_1:9092 # Makes Kafka broker accessible in the docker overlay network (no external): https://rmoff.net/2018/08/02/kafka-listeners-explained/
-      - KAFKA_ADVERTISED_LISTENERS=HOST_INTERNAL://localhost:29092, DOCKER_INTERNAL://kafka_1:9092
+      - KAFKA_ADVERTISED_LISTENERS=HOST_INTERNAL://172.24.40.133:29092, DOCKER_INTERNAL://kafka_1:9092
       - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=HOST_INTERNAL:PLAINTEXT, DOCKER_INTERNAL:PLAINTEXT
       - KAFKA_INTER_BROKER_LISTENER_NAME=DOCKER_INTERNAL
     deploy:
@@ -179,16 +179,16 @@ services:
 
   kafka_2:
     image: "wurstmeister/kafka:latest"
-    container_name: kafka_2
+    hostname: kafka_2
     ports:
-      - "29093:29092"
+      - "29093:29093"
       - "7073:7071"
     environment:
       - KAFKA_CREATE_TOPICS="output:3:1,purchases:3:1" # topic_name:number_of_partitions_number_of_replicas
       - KAFKA_BROKER_ID=2
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
       - KAFKA_LISTENERS=HOST_INTERNAL://:29093, DOCKER_INTERNAL://kafka_2:9092 # Makes Kafka broker accessible in the docker overlay network (no external): https://rmoff.net/2018/08/02/kafka-listeners-explained/
-      - KAFKA_ADVERTISED_LISTENERS=HOST_INTERNAL://localhost:29093, DOCKER_INTERNAL://kafka_2:9092
+      - KAFKA_ADVERTISED_LISTENERS=HOST_INTERNAL://172.24.40.133:29093, DOCKER_INTERNAL://kafka_2:9092
       - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=HOST_INTERNAL:PLAINTEXT, DOCKER_INTERNAL:PLAINTEXT
       - KAFKA_INTER_BROKER_LISTENER_NAME=DOCKER_INTERNAL
     deploy:
@@ -202,16 +202,16 @@ services:
 
   kafka_3:
     image: "wurstmeister/kafka:latest"
-    container_name: kafka_3
+    hostname: kafka_3
     ports:
-      - "29094:29092"
+      - "29094:29094"
       - "7074:7071"
     environment:
       - KAFKA_CREATE_TOPICS="output:3:1,purchases:3:1" # topic_name:number_of_partitions_number_of_replicas
       - KAFKA_BROKER_ID=3
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
       - KAFKA_LISTENERS=HOST_INTERNAL://:29094, DOCKER_INTERNAL://kafka_3:9092 # Makes Kafka broker accessible in the docker overlay network (no external): https://rmoff.net/2018/08/02/kafka-listeners-explained/
-      - KAFKA_ADVERTISED_LISTENERS=HOST_INTERNAL://localhost:29094, DOCKER_INTERNAL://kafka_3:9092
+      - KAFKA_ADVERTISED_LISTENERS=HOST_INTERNAL://172.24.40.133:29094, DOCKER_INTERNAL://kafka_3:9092
       - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=HOST_INTERNAL:PLAINTEXT, DOCKER_INTERNAL:PLAINTEXT
       - KAFKA_INTER_BROKER_LISTENER_NAME=DOCKER_INTERNAL
     deploy:
@@ -225,7 +225,7 @@ services:
 
   grafana:
     image: "grafana-dashboards:latest"
-    container_name: spark_grafana
+    hostname: spark_grafana
     ports:
       - "3000:3000"
     deploy:
@@ -237,7 +237,7 @@ services:
 
   prometheus:
     image: "prometheus-configs:latest"
-    container_name: prometheus
+    hostname: prometheus
     ports:
       - "9090:9090"
     depends_on:
@@ -251,7 +251,7 @@ services:
 
   zookeeper:
     image: "zookeeper:latest" # This image is configured with volumes at /data and /datalog to hold the Zookeeper in-memory database snapshots and the transaction log of updates to the database
-    container_name: zookeeper
+    hostname: zookeeper
     ports:
       - "2181:2181"
     environment:
