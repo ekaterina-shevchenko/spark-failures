@@ -106,7 +106,6 @@ services:
 
   driver:
     image: "driver:latest"
-    hostname: spark_driver
     ports:
       - "4040:4040"
     user: root # This fixes KerberosAuthException during spark-submit: https://issueexplorer.com/issue/bitnami/bitnami-docker-spark/27
@@ -135,6 +134,8 @@ services:
       - BOOTSTRAP_KAFKA_SERVER=swarm-cluster_kafka_1:9092
       - THROUGHPUT=25000
     deploy:
+      restart_policy:
+        condition: none
       placement:
         constraints:
           - node.labels.role==manager

@@ -49,3 +49,6 @@ sudo docker service ls
 
 # inspect specific service
 sudo docker service inspect --pretty SERVICE_NAME
+
+# Check why service died
+# docker service ps SERVICE-NAME

@@ -1,6 +1,14 @@
-docker build -f metrics-collector/Dockerfile -t metrics-collector .
-docker build -f configs/db/Dockerfile -t maria-initialized .
+# Master node
 docker build -f configs/spark/Dockerfile -t spark-with-metrics .
+docker build -f streaming/Dockerfile -t driver .
+docker build -f structured-streaming/Dockerfile -t driver .
+
+# Manager node
 docker build -f generator/Dockerfile -t generator .
 docker build -f configs/grafana/Dockerfile -t grafana-dashboards .
 docker build -f configs/prometheus/Dockerfile -t prometheus-configs .
+docker build -f metrics-collector/Dockerfile -t metrics-collector .
+docker build -f configs/db/Dockerfile -t maria-initialized .
+
+# Worker node
+docker build -f configs/spark/Dockerfile -t spark-with-metrics .
