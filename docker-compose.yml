@@ -165,7 +165,6 @@ services:
       - "29092:29092"
       - "7071:7071"
     environment:
-      - KAFKA_CREATE_TOPICS="output:3:1,purchases:3:1" # topic_name:number_of_partitions_number_of_replicas
       - KAFKA_BROKER_ID=1
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
       - KAFKA_LISTENERS=HOST_INTERNAL://:29092, DOCKER_INTERNAL://kafka_1:9092 # Makes Kafka broker accessible in the docker overlay network (no external): https://rmoff.net/2018/08/02/kafka-listeners-explained/
@@ -188,7 +187,6 @@ services:
       - "29093:29093"
       - "7073:7071"
     environment:
-      - KAFKA_CREATE_TOPICS="output:3:1,purchases:3:1" # topic_name:number_of_partitions_number_of_replicas
       - KAFKA_BROKER_ID=2
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
       - KAFKA_LISTENERS=HOST_INTERNAL://:29093, DOCKER_INTERNAL://kafka_2:9092 # Makes Kafka broker accessible in the docker overlay network (no external): https://rmoff.net/2018/08/02/kafka-listeners-explained/
@@ -211,7 +209,6 @@ services:
       - "29094:29094"
       - "7074:7071"
     environment:
-      - KAFKA_CREATE_TOPICS="output:3:1,purchases:3:1" # topic_name:number_of_partitions_number_of_replicas
       - KAFKA_BROKER_ID=3
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
       - KAFKA_LISTENERS=HOST_INTERNAL://:29094, DOCKER_INTERNAL://kafka_3:9092 # Makes Kafka broker accessible in the docker overlay network (no external): https://rmoff.net/2018/08/02/kafka-listeners-explained/

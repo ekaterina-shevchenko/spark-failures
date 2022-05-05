@@ -4,11 +4,15 @@ import de.tum.spark.failures.common.domain.Purchase;
 import de.tum.spark.failures.streaming.config.KafkaConfig;
 import de.tum.spark.failures.streaming.config.StreamingConfig;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.KafkaAdminClient;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.spark.streaming.api.java.JavaInputDStream;
@@ -19,6 +23,7 @@ import org.apache.spark.streaming.kafka010.LocationStrategies;
 import scala.Tuple2;
 
 import java.util.Collections;
+import java.util.concurrent.ExecutionException;
 
 @Slf4j
 public class Application {
@@ -26,8 +31,10 @@ public class Application {
   private static final String checkpointDirectory = "s3a://spark-failures-checkpoints/checkpoints";
   private static final String topic = KafkaConfig.TOPIC_PURCHASES;
 
+
   public static void main(String[] args) throws InterruptedException {
-    JavaStreamingContext streamingContext =
+      createKafkaTopics();
+      JavaStreamingContext streamingContext =
         JavaStreamingContext.getOrCreate(
             checkpointDirectory,
             () -> {
@@ -126,5 +133,20 @@ public class Application {
     private Long maxSparkTime;
     private Long minOffset;
     private Long maxOffset;
+  }
+
+  public static void createKafkaTopics() {
+      AdminClient adminClient = KafkaAdminClient.create(KafkaConfig.initKafkaAdminParameters());
+      try {
+          adminClient.createTopics(Arrays.asList(
+                  new NewTopic(KafkaConfig.TOPIC_OUTPUT, 6, (short) 1),
+                  new NewTopic(KafkaConfig.TOPIC_PURCHASES, 6, (short) 1)))
+                  .all()
+                  .get();
+      } catch (InterruptedException e) {
+          e.printStackTrace();
+      } catch (ExecutionException e) {
+          e.printStackTrace();
+      }
   }
 }
