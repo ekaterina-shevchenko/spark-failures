@@ -1,6 +1,7 @@
 package de.tum.spark.failures.generator;
 
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerGroupMetadata;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -26,10 +27,16 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 @RequiredArgsConstructor
 public class KafkaLimitProducer<K, V> implements Producer<K, V> {
-    private final Integer limit;
+    @Setter
+    private volatile Integer limit;
     private final ConcurrentMap<String, AtomicInteger> counterMap = new ConcurrentHashMap<>();
     private final AtomicLong second = new AtomicLong(System.currentTimeMillis() / 1000);
     private final Producer<K,V> nestedProducer;
+
+    public KafkaLimitProducer(Integer limit, Producer<K, V> nestedProducer) {
+        this.limit = limit;
+        this.nestedProducer = nestedProducer;
+    }
 
     @Override
     public void initTransactions() {
