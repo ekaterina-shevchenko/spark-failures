@@ -19,6 +19,7 @@ public class Worker<T extends Generator<? extends Event>> implements Runnable {
         try {
             for (int i = 1; i < 9; i++) {
                 producer.setLimit(250_000 * i);
+                counter.set(0);
                 while (counter.get() < 30_000_000 * i) {
                     try {
                         Event event = generator.generate();

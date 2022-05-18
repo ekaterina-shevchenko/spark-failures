@@ -28,7 +28,8 @@ public class CountersIncrementProcessor implements ProcessorSupplier<String, Pur
   @Override
   public Processor<String, Purchase, Void, Void> get() {
     return new Processor<String, Purchase, Void, Void>() {
-      AtomicLong lastTimestamp = new AtomicLong(System.currentTimeMillis());
+      AtomicLong lastTimestamp = new AtomicLong();
+      AtomicLong offset=  new AtomicLong();
 
       @Override
       public void init(ProcessorContext<Void, Void> context) {
@@ -38,7 +39,7 @@ public class CountersIncrementProcessor implements ProcessorSupplier<String, Pur
             PunctuationType.WALL_CLOCK_TIME,
             ts -> {
               long l = lastTimestamp.get();
-              if (ts - l > 10000) {
+              if (l != 0 && ts - l > 10000) {
                 stoppedSet.put(this, true);
                 if (stoppedSet.size() == KAFKA_PARTITIONS && nextStep.compareAndSet(false, true)) {
                   System.out.println("Stopping stream, reached end");
@@ -51,6 +52,7 @@ public class CountersIncrementProcessor implements ProcessorSupplier<String, Pur
 
       @Override
       public void process(Record<String, Purchase> record) {
+        offset.incrementAndGet();
         Application.purchases.incrementAndGet();
         lastTimestamp.set(System.currentTimeMillis());
         String product = record.value().getProduct();
