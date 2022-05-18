@@ -37,7 +37,7 @@ public class CountersEnrichProcessor implements ProcessorSupplier<String, Output
         Processor.super.init(context);
         context.schedule(Duration.ofMillis(1000), PunctuationType.WALL_CLOCK_TIME, ts -> {
           long l = lastTimestamp.get();
-          if (ts - l > 15000) {
+          if (l != 0 && ts - l > 15000) {
             stoppedSet.put(this, true);
             if (stoppedSet.size() == KAFKA_PARTITIONS && nextStep.compareAndSet(false, true)) {
               System.out.println("Stopping stream, reached end");

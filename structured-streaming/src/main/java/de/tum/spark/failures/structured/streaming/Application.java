@@ -3,6 +3,9 @@ package de.tum.spark.failures.structured.streaming;
 import de.tum.spark.failures.structured.streaming.config.KafkaConfig;
 import de.tum.spark.failures.structured.streaming.config.StreamingConfig;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.KafkaAdminClient;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
@@ -12,14 +15,15 @@ import org.apache.spark.sql.streaming.StreamingQuery;
 import org.apache.spark.sql.streaming.StreamingQueryException;
 import org.apache.spark.sql.streaming.Trigger;
 
-import java.time.ZoneId;
-import java.util.TimeZone;
+import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 @Slf4j
 public class Application {
 
   public static void main(String[] args) throws TimeoutException, StreamingQueryException {
+    createKafkaTopics();
     SparkSession session = SparkSession
         .builder()
         .appName("structured-streaming-app-purchase-count")
@@ -78,5 +82,20 @@ public class Application {
         .trigger(Trigger.ProcessingTime("5 seconds"))
         .outputMode(OutputMode.Append())
         .start();
+  }
+
+  public static void createKafkaTopics() {
+    AdminClient adminClient = KafkaAdminClient.create(KafkaConfig.initKafkaAdminParameters());
+    try {
+      adminClient.createTopics(Arrays.asList(
+                      new NewTopic(KafkaConfig.TOPIC_OUTPUT, 6, (short) 1),
+                      new NewTopic(KafkaConfig.TOPIC_PURCHASES, 6, (short) 1)))
+              .all()
+              .get();
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    } catch (ExecutionException e) {
+      e.printStackTrace();
+    }
   }
 }
