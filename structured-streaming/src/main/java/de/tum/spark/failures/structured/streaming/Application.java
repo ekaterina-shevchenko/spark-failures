@@ -33,7 +33,7 @@ public class Application {
         .select("sparkIngestionTimestamp", "kafkaTimestamp", "json.product", "json.number")
         .withWatermark("kafkaTimestamp", "2 seconds")
         .groupBy(
-            functions.window(functions.col("kafkaTimestamp"), "5 seconds", "5 seconds"),
+            functions.window(functions.col("kafkaTimestamp"), "1 second", "1 second"),
             functions.col("product")
         ).agg(functions.to_json(functions.struct(
                                     functions.expr("count(number)").cast("int").as("totalCount"),
@@ -72,10 +72,10 @@ public class Application {
         .format("kafka")
         .option("kafka.bootstrap.servers", KafkaConfig.BOOTSTRAP_KAFKA_SERVER)
         .option("topic", KafkaConfig.TOPIC_OUTPUT)
-        .option("acks","all") // TODO: does this even work?
-        .option("kafka.acks","all") // TODO: does this even work?
+        .option("acks","all")
+        .option("kafka.acks","all")
         .option("checkpointLocation", "s3a://spark-failures-checkpoints/checkpoints")
-        .trigger(Trigger.ProcessingTime("10 seconds"))
+        .trigger(Trigger.ProcessingTime("5 seconds"))
         .outputMode(OutputMode.Append())
         .start();
   }
