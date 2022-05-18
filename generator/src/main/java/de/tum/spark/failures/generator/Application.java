@@ -12,7 +12,6 @@ import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.KafkaAdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.Producer;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,7 +41,7 @@ public class Application {
 
         }
         kafkaAdmin.close();
-        Producer<String, Event> kafkaProducer = initKafkaProducer();
+        KafkaLimitProducer<String, Event> kafkaProducer = initKafkaProducer();
 
         PurchaseGenerator purchaseGenerator = new PurchaseGenerator(users, products);
         Worker<PurchaseGenerator> worker2 = new Worker<>(GeneratorConfig.TOPIC_PURCHASES, purchaseGenerator, kafkaProducer);
@@ -74,7 +73,7 @@ public class Application {
                 .collect(Collectors.toList());
     }
 
-    private static Producer<String, Event> initKafkaProducer() {
+    private static KafkaLimitProducer<String, Event> initKafkaProducer() {
         Map<String, Object> props = new HashMap<>();
         props.put("bootstrap.servers", GeneratorConfig.BOOTSTRAP_KAFKA_SERVER);
         props.put("acks", "all");
