@@ -52,3 +52,11 @@ sudo docker service inspect --pretty SERVICE_NAME
 
 # Check why service died
 # docker service ps SERVICE-NAME
+
+# Create docker swarm visualizer
+docker service create \
+  --name=viz \
+  --publish=9020:8080/tcp \
+  --constraint=node.role==manager \
+  --mount=type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock \
+  dockersamples/visualizer

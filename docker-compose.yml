@@ -144,19 +144,19 @@ services:
     depends_on:
       - driver
 
-  gremlin-driver:
-    image: "gremlin/gremlin:latest"
-    hostname: gremlin-driver
-    environment:
-    - GREMLIN_TEAM_ID=8882f35b-8baa-4265-82f3-5b8baa82659b
-    - GREMLIN_TEAM_SECRET=6e06d523-16ec-4c00-86d5-2316ecec00f0
-    tty: true
-    deploy:
-      placement:
-        constraints:
-          - node.labels.role==manager
-    networks:
-      - spark-network
+  #gremlin-driver:
+  #  image: "gremlin/gremlin:latest"
+  #  hostname: gremlin-driver
+  #  environment:
+  #  - GREMLIN_TEAM_ID=8882f35b-8baa-4265-82f3-5b8baa82659b
+  #  - GREMLIN_TEAM_SECRET=6e06d523-16ec-4c00-86d5-2316ecec00f0
+  #  tty: true
+  #  deploy:
+  #    placement:
+  #      constraints:
+  #        - node.labels.role==manager
+  #  networks:
+  #    - spark-network
 
   kafka_1:
     image: "wurstmeister/kafka:latest"
@@ -236,19 +236,19 @@ services:
     networks:
       - spark-network
 
-  prometheus:
-    image: "prometheus-configs:latest"
-    hostname: prometheus
-    ports:
-      - "9090:9090"
-    depends_on:
-      - kafka_1
-    deploy:
-      placement:
-        constraints:
-          - node.labels.role==manager
-    networks:
-      - spark-network
+  #prometheus:
+  #  image: "prometheus-configs:latest"
+  #  hostname: prometheus
+  #  ports:
+  #    - "9090:9090"
+  #  depends_on:
+  #    - kafka_1
+  #  deploy:
+  #    placement:
+  #      constraints:
+  #        - node.labels.role==manager
+  #  networks:
+  #    - spark-network
 
   zookeeper:
     image: "zookeeper:latest" # This image is configured with volumes at /data and /datalog to hold the Zookeeper in-memory database snapshots and the transaction log of updates to the database
@@ -263,6 +263,17 @@ services:
           - node.labels.role==manager
     networks:
       - spark-network
+
+  viz:
+    build: https://github.com/dockersamples/docker-swarm-visualizer.git
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    ports:
+      - "8080:8080"
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role==manager
 
   #node-exporter-1:
   #  image: bitnami/node-exporter
