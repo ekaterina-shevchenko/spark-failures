@@ -35,7 +35,7 @@ public class Application {
         .select(functions.from_json(functions.col("message"), StreamingConfig.schema)
                     .as("json"), functions.col("kafkaTimestamp"), functions.col("sparkIngestionTimestamp"))
         .select("sparkIngestionTimestamp", "kafkaTimestamp", "json.product", "json.number")
-        .withWatermark("kafkaTimestamp", "2 seconds")
+        .withWatermark("kafkaTimestamp", "5 seconds")
         .groupBy(
             functions.window(functions.col("kafkaTimestamp"), "1 second", "1 second"),
             functions.col("product")
@@ -61,12 +61,11 @@ public class Application {
         .format("kafka")
         .option("kafka.bootstrap.servers", KafkaConfig.BOOTSTRAP_KAFKA_SERVER)
         .option("subscribe", KafkaConfig.TOPIC_PURCHASES)
-        .option("minOffsetsPerTrigger", 1_000)
         .option("maxOffsetsPerTrigger", 1_000_000)
-        .option("maxTriggerDelay", "30s")
         .option("kafkaConsumer.pollTimeoutMs", 60_000)
         .option("failOnDataLoss", false)
         .option("startingOffsets","earliest")
+        //.option("startingOffsetsByTimestampStrategy", "latest")
         .load();
   }
 
