@@ -26,7 +26,7 @@ public class Application {
         .appName("structured-streaming-app-purchase-count")
         .config("spark.sql.streaming.metricsEnabled", true)
         .getOrCreate();
-    session.streams().addListener(new SimpleListener());
+    //session.streams().addListener(new SimpleListener());
     Dataset<Row> dataframe = initInputStream(session);
     Dataset<Row> rowDataset = dataframe
         .selectExpr("CAST(value AS STRING) as message", "timestamp as kafkaTimestamp", "current_timestamp() as sparkIngestionTimestamp")
