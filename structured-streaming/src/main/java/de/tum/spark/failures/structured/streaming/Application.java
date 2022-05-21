@@ -10,10 +10,7 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.functions;
-import org.apache.spark.sql.streaming.OutputMode;
-import org.apache.spark.sql.streaming.StreamingQuery;
-import org.apache.spark.sql.streaming.StreamingQueryException;
-import org.apache.spark.sql.streaming.Trigger;
+import org.apache.spark.sql.streaming.*;
 
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
@@ -29,6 +26,7 @@ public class Application {
         .appName("structured-streaming-app-purchase-count")
         .config("spark.sql.streaming.metricsEnabled", true)
         .getOrCreate();
+    session.streams().addListener(new SimpleListener());
     Dataset<Row> dataframe = initInputStream(session);
     Dataset<Row> rowDataset = dataframe
         .selectExpr("CAST(value AS STRING) as message", "timestamp as kafkaTimestamp", "current_timestamp() as sparkIngestionTimestamp")
